@@ -223,6 +223,7 @@ private final class FocusController {
 
         let location = event.location
         guard !isMenuBarLocation(location) else { return }
+        guard !isIgnoredSystemUI(at: location) else { return }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + options.activationDelay) { [weak self] in
             self?.activateElement(at: location)
@@ -253,19 +254,7 @@ private final class FocusController {
     private func activateElement(at location: CGPoint) {
         guard Date() >= suppressedUntil else { return }
         guard !isMenuBarLocation(location) else { return }
-
-        var rawElement: AXUIElement?
-        let result = AXUIElementCopyElementAtPosition(
-            systemElement,
-            Float(location.x),
-            Float(location.y),
-            &rawElement
-        )
-
-        guard result == .success, let element = rawElement else { return }
-
-        var pid = pid_t(0)
-        guard AXUIElementGetPid(element, &pid) == .success, pid > 0, pid != getpid() else { return }
+        guard let (element, pid) = elementAndProcessIdentifier(at: location), pid != getpid() else { return }
         guard !isSystemUIProcess(pid: pid) else { return }
 
         let appElement = AXUIElementCreateApplication(pid)
@@ -285,6 +274,27 @@ private final class FocusController {
         if options.reclickAfterActivation {
             reclick(at: location)
         }
+    }
+
+    private func isIgnoredSystemUI(at location: CGPoint) -> Bool {
+        guard let (_, pid) = elementAndProcessIdentifier(at: location) else { return false }
+        return pid == getpid() || isSystemUIProcess(pid: pid)
+    }
+
+    private func elementAndProcessIdentifier(at location: CGPoint) -> (element: AXUIElement, pid: pid_t)? {
+        var rawElement: AXUIElement?
+        let result = AXUIElementCopyElementAtPosition(
+            systemElement,
+            Float(location.x),
+            Float(location.y),
+            &rawElement
+        )
+
+        guard result == .success, let element = rawElement else { return nil }
+
+        var pid = pid_t(0)
+        guard AXUIElementGetPid(element, &pid) == .success, pid > 0 else { return nil }
+        return (element, pid)
     }
 
     private func focusedWindowCandidate(from element: AXUIElement) -> AXUIElement? {
@@ -334,6 +344,7 @@ private final class FocusController {
 
         return bundleIdentifier == "com.apple.systemuiserver" ||
             bundleIdentifier == "com.apple.controlcenter" ||
+            bundleIdentifier == "com.apple.dock" ||
             bundleIdentifier == "com.apple.TextInputMenuAgent"
     }
 

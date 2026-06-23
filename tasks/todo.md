@@ -110,3 +110,19 @@
 - Localized menu bar tooltip, menu items, status text, permission console messages, errors, and CLI help.
 - Added `en.lproj/Localizable.strings` and `zh-Hans.lproj/Localizable.strings` under SwiftPM resources.
 - Verified `swift build`, `.strings` linting, English and Chinese help-text probes via `AppleLanguages`, `./script/build_app.sh`, packaged resource paths, and codesign verification.
+
+## Dock Click Safety Fix Plan
+
+- [x] Ignore Dock-owned click targets before scheduling delayed focus activation.
+  - Verify: clicks on Dock icons do not enqueue the focus workaround.
+- [x] Keep delayed activation guarded against Dock and other system UI processes.
+  - Verify: `com.apple.dock` is included in system UI filtering.
+- [x] Build and package the app.
+  - Verify: `swift build` and `./script/build_app.sh` succeed.
+
+## Dock Click Safety Fix Review
+
+- Confirmed Dock's bundle identifier is `com.apple.dock`.
+- Added an early system UI target check before delayed focus activation is scheduled, so Dock clicks are ignored immediately.
+- Kept the delayed activation path guarded against Dock and the existing system UI processes.
+- Verified `swift build`, `.strings` linting, `./script/build_app.sh`, and `./script/build_and_run.sh --verify`.

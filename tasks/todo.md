@@ -62,11 +62,19 @@
 
 ## GitHub Packaging And Release Plan
 
-- [ ] Split app packaging into a reusable build script.
+- [x] Split app packaging into a reusable build script.
   - Verify: local script produces `dist/MacFocusFix.app` and a zip artifact without launching the app.
-- [ ] Rewrite README as bilingual project documentation inspired by Mac Mouse Fix.
+- [x] Rewrite README as bilingual project documentation inspired by Mac Mouse Fix.
   - Verify: README covers purpose, install, permissions, menu, build, releases, limitations, and uninstall in Chinese and English.
-- [ ] Add GitHub Actions release workflow.
+- [x] Add GitHub Actions release workflow.
   - Verify: workflow builds on macOS, uploads artifacts, and creates a GitHub Release on version tags.
-- [ ] Create the GitHub repository and push the project.
+- [x] Create the GitHub repository and push the project.
   - Verify: remote exists, branch is pushed, and workflow file is present on GitHub.
+
+## GitHub Packaging And Release Review
+
+- Added `script/build_app.sh` so local builds and GitHub Actions share one app packaging path.
+- Rewrote `README.md` as bilingual Chinese/English documentation with download, install, permission, menu, build, release, uninstall, and limitation sections.
+- Added `.github/workflows/release.yml`; tag pushes matching `v*` build a zipped app and publish a GitHub Release.
+- Verified local packaging with `./script/build_app.sh`, `ditto` zip creation, and `unzip -tq`.
+- Created public repository `Souitou-iop/macOS-Windows-FIX`, pushed `main`, pushed tag `v0.1.0`, and verified release asset `MacFocusFix-0.1.0-macOS.zip`.

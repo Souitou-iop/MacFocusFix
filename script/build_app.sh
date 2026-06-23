@@ -5,6 +5,9 @@ CONFIGURATION="${CONFIGURATION:-debug}"
 APP_NAME="MacFocusFix"
 BUNDLE_ID="win.ebato.MacFocusFix"
 MIN_SYSTEM_VERSION="14.0"
+APP_VERSION="${APP_VERSION:-0.0.0-dev}"
+APP_BUILD="${APP_BUILD:-1}"
+SIGN_IDENTITY="${SIGN_IDENTITY:--}"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist"
@@ -50,6 +53,10 @@ cat >"$INFO_PLIST" <<PLIST
   <string>AppIcon</string>
   <key>CFBundleIdentifier</key>
   <string>$BUNDLE_ID</string>
+  <key>CFBundleShortVersionString</key>
+  <string>$APP_VERSION</string>
+  <key>CFBundleVersion</key>
+  <string>$APP_BUILD</string>
   <key>CFBundleName</key>
   <string>$APP_NAME</string>
   <key>CFBundlePackageType</key>
@@ -80,7 +87,22 @@ if [[ -f "$ICON_SOURCE" ]]; then
   iconutil -c icns "$ICONSET_DIR" -o "$APP_ICON"
 fi
 
-codesign --force --deep --sign - "$APP_BUNDLE" >/dev/null
+sign_item() {
+  local item="$1"
+  local args=(--force --sign "$SIGN_IDENTITY")
+
+  if [[ "$SIGN_IDENTITY" != "-" ]]; then
+    args+=(--options runtime --timestamp)
+  fi
+
+  codesign "${args[@]}" "$item" >/dev/null
+}
+
+if [[ -d "$APP_RESOURCES/MacFocusFix_MacFocusFix.bundle" ]]; then
+  sign_item "$APP_RESOURCES/MacFocusFix_MacFocusFix.bundle"
+fi
+
+sign_item "$APP_BUNDLE"
 codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
 
 printf '%s\n' "$APP_BUNDLE"

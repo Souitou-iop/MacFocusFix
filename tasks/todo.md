@@ -126,3 +126,23 @@
 - Added an early system UI target check before delayed focus activation is scheduled, so Dock clicks are ignored immediately.
 - Kept the delayed activation path guarded against Dock and the existing system UI processes.
 - Verified `swift build`, `.strings` linting, `./script/build_app.sh`, and `./script/build_and_run.sh --verify`.
+
+## Public Signing And Notarization Plan
+
+- [x] Make app packaging support a stable Developer ID signing identity while keeping ad-hoc signing for local development.
+  - Verify: local `./script/build_app.sh` still works with ad-hoc signing.
+- [x] Add a notarization script for release builds.
+  - Verify: the script has explicit Apple credential checks and staples the app after notarization.
+- [x] Update GitHub Actions release workflow to import a Developer ID certificate, sign, notarize, staple, and then zip.
+  - Verify: workflow YAML parses and release builds fail early if signing secrets are absent.
+- [x] Document why official releases should be Developer ID signed and notarized.
+  - Verify: README explains that ad-hoc builds can require re-authorizing Accessibility, while signed releases should preserve identity across updates.
+
+## Public Signing And Notarization Review
+
+- Updated `script/build_app.sh` to support `SIGN_IDENTITY`; it keeps ad-hoc signing by default and enables hardened runtime plus timestamp for real signing identities.
+- Added `CFBundleShortVersionString` and `CFBundleVersion` to the generated `Info.plist`.
+- Added `script/notarize_app.sh` to submit the signed app to Apple notarization, staple the result, validate the staple, and run Gatekeeper assessment.
+- Updated `.github/workflows/release.yml` so tag releases require Developer ID and Apple notarization secrets, import the `.p12` certificate, sign, notarize, staple, zip, and publish.
+- Updated English and Chinese READMEs to explain stable Developer ID signing, notarization, and why ad-hoc builds can require Accessibility re-authorization.
+- Verified local ad-hoc fallback with `./script/build_app.sh`, script syntax checks, workflow YAML parsing, generated Info.plist fields, and codesign inspection.

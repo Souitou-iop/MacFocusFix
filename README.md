@@ -44,7 +44,7 @@ MacFocusFix is the small local workaround that came out of that investigation. I
 4. Launch the app.
 5. Grant Accessibility permission in System Settings when macOS asks for it.
 
-If macOS blocks the app because it is not notarized, open it from Finder with Control-click, choose Open, then confirm. Current builds are ad hoc signed, not Developer ID notarized.
+Official tagged releases are configured to be Developer ID signed and notarized. If you build the app locally, the local build uses ad hoc signing unless you provide your own signing identity.
 
 ## Menu Bar
 
@@ -66,7 +66,30 @@ If macOS blocks the app because it is not notarized, open it from Finder with Co
 
 ## Releases
 
-GitHub Actions builds release artifacts on macOS. Pushing a tag such as `v0.1.0` creates a zipped `.app` bundle and publishes it as a GitHub Release asset.
+GitHub Actions builds release artifacts on macOS. Pushing a tag such as `v0.1.0` signs the app with a Developer ID certificate, submits it for Apple notarization, staples the notarization ticket, then publishes a zipped `.app` bundle as a GitHub Release asset.
+
+This matters for Accessibility permission. macOS tracks trusted apps by code identity, not just by app name. Ad hoc builds can look like a different app after every rebuild, which may require granting Accessibility permission again. A stable Developer ID signature keeps the identity consistent across updates.
+
+The release workflow expects these repository secrets:
+
+- `DEVELOPER_ID_CERTIFICATE_BASE64`: base64-encoded `.p12` Developer ID Application certificate.
+- `DEVELOPER_ID_CERTIFICATE_PASSWORD`: password for the `.p12` file.
+- `DEVELOPER_ID_SIGNING_IDENTITY`: full signing identity, for example `Developer ID Application: Name (TEAMID)`.
+- `APPLE_ID`: Apple ID used for notarization.
+- `APPLE_TEAM_ID`: Apple Developer Team ID.
+- `APPLE_APP_PASSWORD`: app-specific password for notarization.
+
+Local development can still use:
+
+```zsh
+./script/build_app.sh
+```
+
+To test with a local signing identity:
+
+```zsh
+SIGN_IDENTITY="Developer ID Application: Name (TEAMID)" ./script/build_app.sh
+```
 
 ## Uninstall
 

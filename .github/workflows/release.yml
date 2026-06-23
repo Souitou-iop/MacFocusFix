@@ -17,17 +17,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Validate signing secrets
-        if: github.ref_type == 'tag'
+      - name: Resolve signing mode
+        id: signing
         run: |
-          missing=0
+          missing=()
           for name in DEVELOPER_ID_CERTIFICATE_BASE64 DEVELOPER_ID_CERTIFICATE_PASSWORD DEVELOPER_ID_SIGNING_IDENTITY APPLE_ID APPLE_TEAM_ID APPLE_APP_PASSWORD; do
             if [[ -z "${!name:-}" ]]; then
-              echo "Missing required release secret: ${name}" >&2
-              missing=1
+              missing+=("${name}")
             fi
           done
-          exit "$missing"
+
+          if [[ "${#missing[@]}" -eq 0 ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "Release will use Developer ID signing and notarization."
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Release will use ad hoc signing and skip notarization."
+            for name in "${missing[@]}"; do
+              echo "::warning::Missing optional Developer ID release secret: ${name}"
+            done
+          fi
         env:
           DEVELOPER_ID_CERTIFICATE_BASE64: ${{ secrets.DEVELOPER_ID_CERTIFICATE_BASE64 }}
           DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
@@ -37,7 +46,7 @@ jobs:
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
 
       - name: Import Developer ID certificate
-        if: github.ref_type == 'tag'
+        if: github.ref_type == 'tag' && steps.signing.outputs.available == 'true'
         run: |
           KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
           CERTIFICATE_PATH="$RUNNER_TEMP/developer-id.p12"
@@ -64,14 +73,21 @@ jobs:
           echo "APP_VERSION=${VERSION}" >> "$GITHUB_ENV"
 
       - name: Build app bundle
-        run: ./script/build_app.sh
+        run: |
+          if [[ "${SIGNING_AVAILABLE}" == "true" ]]; then
+            export SIGN_IDENTITY="${DEVELOPER_ID_SIGNING_IDENTITY}"
+          else
+            export SIGN_IDENTITY="-"
+          fi
+          ./script/build_app.sh
         env:
           CONFIGURATION: release
           APP_BUILD: ${{ github.run_number }}
-          SIGN_IDENTITY: ${{ github.ref_type == 'tag' && secrets.DEVELOPER_ID_SIGNING_IDENTITY || '-' }}
+          SIGNING_AVAILABLE: ${{ github.ref_type == 'tag' && steps.signing.outputs.available == 'true' && 'true' || 'false' }}
+          DEVELOPER_ID_SIGNING_IDENTITY: ${{ secrets.DEVELOPER_ID_SIGNING_IDENTITY }}
 
       - name: Notarize app bundle
-        if: github.ref_type == 'tag'
+        if: github.ref_type == 'tag' && steps.signing.outputs.available == 'true'
         run: ./script/notarize_app.sh
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}

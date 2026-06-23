@@ -161,3 +161,19 @@
 - Removed the synthetic post-activation click path because it can interfere with window dragging and other pointer gestures.
 - Removed the menu item, CLI option, build/run script mode, localization keys, and README mentions for the fallback.
 - Verified `swift build`, `plutil -lint`, English and Chinese `--help`, `./script/build_and_run.sh --verify`, and searched active source/docs for reclick leftovers.
+
+## Ad Hoc Release Workflow Plan
+
+- [x] Let tag releases continue when Developer ID secrets are missing.
+  - Verify: workflow resolves an ad hoc signing mode instead of failing at secret validation.
+- [x] Keep Developer ID signing and notarization when all secrets are configured.
+  - Verify: certificate import and notarization still run only for complete signing credentials.
+- [x] Validate workflow syntax locally.
+  - Verify: workflow YAML parses after the edit.
+
+## Ad Hoc Release Workflow Review
+
+- Changed the release workflow to resolve Developer ID availability instead of failing immediately when signing secrets are missing.
+- Tag releases now build with ad hoc signing and still publish a Release zip when Developer ID secrets are absent.
+- Developer ID certificate import and notarization still run only when all signing and Apple notarization secrets are present.
+- Verified workflow YAML parsing with Ruby and checked the diff for whitespace errors.

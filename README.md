@@ -1,35 +1,56 @@
-# MacFocusFix
+<p align="center">
+  <img src="macOS-Windows-FIX%20Exports/macOS-Windows-FIX.icon/Assets/icon%E5%BE%85%E5%AE%9A.png" width="160" alt="MacFocusFix icon">
+</p>
 
-A lightweight macOS menu bar app that keeps remote-control clicks from leaving keyboard focus behind.
-It is built for the case where a click lands on the right window, but typing still goes to the old app.
+<h1 align="center">MacFocusFix</h1>
 
-## English
+<p align="center">
+  A lightweight macOS menu bar app that keeps remote-control clicks from leaving keyboard focus behind.
+</p>
 
-### What it does
+<p align="center">
+  <strong>English</strong> | <a href="docs/README.zh-CN.md">简体中文</a>
+</p>
 
-MacFocusFix listens for mouse clicks and promotes the clicked app to the front so keyboard input follows the pointer.
-It is designed for remote-control workflows such as UU Remote.
+<p align="center">
+  <a href="https://github.com/Souitou-iop/macOS-Windows-FIX/releases">Download</a> ·
+  <a href="https://github.com/Souitou-iop/macOS-Windows-FIX/actions/workflows/release.yml">Builds</a> ·
+  <a href="https://github.com/Souitou-iop/macOS-Windows-FIX/issues">Feedback</a>
+</p>
 
-### Download
+## Why
 
-Get the latest release from [Releases](https://github.com/Souitou-iop/macOS-Windows-FIX/releases).
+Some remote-control apps can click the right macOS window without making that app the real foreground app. The result is awkward: the click lands where you expect, but keyboard input still goes to the previous app.
 
-### Install
+MacFocusFix listens for mouse clicks, finds the app under the pointer, and activates it so typing follows the click.
 
-1. Download the release zip.
-2. Unzip it and move `MacFocusFix.app` to `/Applications`.
-3. Launch the app.
-4. Grant Accessibility permission in System Settings if macOS asks for it.
+## Features
 
-### Menu bar actions
+- Menu bar only: no Dock icon.
+- Enable or disable the focus fix from the menu bar.
+- Optional fallback mode that sends one local click after activation.
+- Ignores the macOS menu bar and known system UI processes, so Control Center, Wi-Fi, and input method controls keep working normally.
+- Uses the bundled app icon from the Icon Composer export and a separate template-style menu bar icon.
 
-- Status: shows whether the helper is on, off, or waiting for permission.
-- Enable / Disable: turns the focus fix on or off.
-- Reclick after activation: fallback mode for apps that still do not accept typing after activation.
+## Installation
+
+1. Download the latest zip from [Releases](https://github.com/Souitou-iop/macOS-Windows-FIX/releases).
+2. Unzip it.
+3. Move `MacFocusFix.app` to `/Applications`.
+4. Launch the app.
+5. Grant Accessibility permission in System Settings when macOS asks for it.
+
+If macOS blocks the app because it is not notarized, open it from Finder with Control-click, choose Open, then confirm. Current builds are ad hoc signed, not Developer ID notarized.
+
+## Menu Bar
+
+- Status: shows whether the helper is on, off, or waiting for Accessibility permission.
+- Enable / Disable Focus Fix: installs or removes the mouse event listener.
+- Reclick After Activation: fallback for apps that activate but still do not accept typing.
 - Open Accessibility Settings
-- Quit
+- Quit MacFocusFix
 
-### Build locally
+## Build Locally
 
 ```zsh
 ./script/build_app.sh
@@ -39,64 +60,14 @@ Get the latest release from [Releases](https://github.com/Souitou-iop/macOS-Wind
 `build_app.sh` creates `dist/MacFocusFix.app` and signs it ad hoc for local use.
 `build_and_run.sh` builds the app and opens it.
 
-### Release notes
+## Releases
 
-Release builds are produced by GitHub Actions as a zipped `.app` bundle.
-The project currently uses ad hoc signing for local and CI builds and is not notarized.
+GitHub Actions builds release artifacts on macOS. Pushing a tag such as `v0.1.0` creates a zipped `.app` bundle and publishes it as a GitHub Release asset.
 
-### Uninstall
+## Uninstall
 
-Quit the app, then move `MacFocusFix.app` to the Trash.
+Quit MacFocusFix, then move `MacFocusFix.app` to the Trash. If you granted Accessibility permission, you can also remove it from System Settings.
 
-### Limitations
+## Compatibility
 
-MacFocusFix ignores clicks in the screen menu bar area and skips known system UI processes so it does not interfere with Control Center, Wi-Fi, or input method controls.
-
-## 中文
-
-### 它做什么
-
-MacFocusFix 是一个 macOS 菜单栏工具，用来修复远程控制时“点击已经到了正确窗口，但键盘输入还留在旧 App 里”的问题。
-它适合 UU Remote 这类远程点击场景。
-
-### 下载
-
-到 [Releases](https://github.com/Souitou-iop/macOS-Windows-FIX/releases) 下载最新版本。
-
-### 安装
-
-1. 下载 release 压缩包。
-2. 解压后把 `MacFocusFix.app` 拖到 `/Applications`。
-3. 启动应用。
-4. 如果 macOS 提示权限，去系统设置里开启“辅助功能”。
-
-### 菜单栏功能
-
-- 状态：显示已开启、已关闭或等待授权。
-- 开启 / 关闭：控制焦点修复是否生效。
-- 激活后二次点击：给“激活后仍不能输入”的应用做兜底。
-- 打开辅助功能设置
-- 退出
-
-### 本地构建
-
-```zsh
-./script/build_app.sh
-./script/build_and_run.sh
-```
-
-`build_app.sh` 会生成 `dist/MacFocusFix.app`，并使用 ad hoc 签名，适合本地和 CI。
-`build_and_run.sh` 会构建并打开应用。
-
-### 发布说明
-
-GitHub Actions 会把 release 构建打成 zip 格式的 `.app` 包。
-当前项目的本地和 CI 构建都使用 ad hoc 签名，暂未做 notarization。
-
-### 卸载
-
-退出应用后，直接把 `MacFocusFix.app` 移到废纸篓即可。
-
-### 已知边界
-
-MacFocusFix 会忽略屏幕顶部菜单栏区域的点击，并跳过已知系统 UI 进程，因此不会干扰控制中心、Wi-Fi 和输入法控件。
+MacFocusFix is built with SwiftPM and targets macOS 14 or later.

@@ -78,3 +78,19 @@
 - Added `.github/workflows/release.yml`; tag pushes matching `v*` build a zipped app and publish a GitHub Release.
 - Verified local packaging with `./script/build_app.sh`, `ditto` zip creation, and `unzip -tq`.
 - Created public repository `Souitou-iop/macOS-Windows-FIX`, pushed `main`, pushed tag `v0.1.0`, and verified release asset `MacFocusFix-0.1.0-macOS.zip`.
+
+## README Language Switch And Icon Polish Plan
+
+- [x] Split README languages instead of stacking both languages in one page.
+  - Verify: root `README.md` is English by default and links to `docs/README.zh-CN.md`.
+- [x] Add the app icon to both README files.
+  - Verify: README image points at the 1024x1024 Icon Composer export under `macOS-Windows-FIX Exports`.
+- [x] Rebuild the app bundle and verify the packaged icon.
+  - Verify: `dist/MacFocusFix.app/Contents/Resources/AppIcon.icns` exists and codesign verification succeeds.
+
+## README Language Switch And Icon Polish Review
+
+- Changed the root README to English-only by default with a language switch to `docs/README.zh-CN.md`.
+- Added the app icon to both README files using the 1024x1024 Icon Composer export from `macOS-Windows-FIX Exports`.
+- Confirmed `script/build_app.sh` already packages the same icon source into `dist/MacFocusFix.app/Contents/Resources/AppIcon.icns`.
+- Verified `./script/build_app.sh`, `file dist/MacFocusFix.app/Contents/Resources/AppIcon.icns`, and `codesign --verify --deep --strict --verbose=2 dist/MacFocusFix.app`.

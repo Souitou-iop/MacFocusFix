@@ -6,6 +6,53 @@ import os
 private let bundleID = "win.ebato.MacFocusFix"
 private let logger = Logger(subsystem: bundleID, category: "focus")
 
+private enum L10n {
+    private static let bundle: Bundle = {
+        let localization = preferredLocalization()
+
+        guard let path = Bundle.module.path(forResource: localization, ofType: "lproj"),
+              let bundle = Bundle(path: path) else {
+            return .module
+        }
+
+        return bundle
+    }()
+
+    private static func preferredLocalization() -> String {
+        for language in preferredLanguages() {
+            let normalized = language.lowercased()
+            if normalized.hasPrefix("en") {
+                return "en"
+            }
+            if normalized.hasPrefix("zh") {
+                return "zh-Hans"
+            }
+        }
+
+        return "en"
+    }
+
+    private static func preferredLanguages() -> [String] {
+        if let rawLanguages = ProcessInfo.processInfo.environment["AppleLanguages"] {
+            let languages = rawLanguages
+                .trimmingCharacters(in: CharacterSet(charactersIn: "()"))
+                .split(separator: ",")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines.union(CharacterSet(charactersIn: "\"'"))) }
+                .filter { !$0.isEmpty }
+
+            if !languages.isEmpty {
+                return languages
+            }
+        }
+
+        return (UserDefaults.standard.array(forKey: "AppleLanguages") as? [String]) ?? Locale.preferredLanguages
+    }
+
+    static func tr(_ key: String) -> String {
+        NSLocalizedString(key, bundle: bundle, value: key, comment: "")
+    }
+}
+
 private struct Options {
     var requireUURemote = true
     var reclickAfterActivation = false
@@ -20,11 +67,11 @@ private enum FocusState {
     var title: String {
         switch self {
         case .disabled:
-            return "已关闭"
+            return L10n.tr("status.disabled")
         case .waitingForPermission:
-            return "等待辅助功能授权"
+            return L10n.tr("status.waitingForPermission")
         case .active:
-            return "已开启"
+            return L10n.tr("status.active")
         }
     }
 }
@@ -132,7 +179,7 @@ private final class FocusController {
         )
 
         guard let eventTap else {
-            print("Could not create the mouse event tap. Recheck Accessibility/Input Monitoring permission for MacFocusFix.")
+            print(L10n.tr("error.eventTapCreateFailed"))
             return false
         }
 
@@ -146,14 +193,16 @@ private final class FocusController {
     }
 
     private func printStatus() {
-        print("MacFocusFix is running. Press Ctrl-C to stop.")
-        print("Mode: \(options.requireUURemote ? "only while UURemote is running" : "always on")\(options.reclickAfterActivation ? ", reclick enabled" : "")")
+        print(L10n.tr("console.running"))
+        let mode = options.requireUURemote ? L10n.tr("mode.uuRemoteOnly") : L10n.tr("mode.alwaysOn")
+        let reclick = options.reclickAfterActivation ? L10n.tr("mode.reclickSuffix") : ""
+        print(String(format: L10n.tr("console.mode"), mode, reclick))
         logger.info("MacFocusFix event tap is active")
     }
 
     private func printPermissionStatus() {
-        print("MacFocusFix is waiting for Accessibility permission.")
-        print("Grant it in System Settings > Privacy & Security > Accessibility. It will start automatically after permission is granted.")
+        print(L10n.tr("console.waitingForPermission"))
+        print(L10n.tr("console.permissionInstructions"))
     }
 
     private func setState(_ newState: FocusState) {
@@ -336,7 +385,7 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
         button.imagePosition = .imageOnly
         button.title = button.image == nil ? "FF" : ""
 
-        button.toolTip = "MacFocusFix 焦点修复"
+        button.toolTip = L10n.tr("menuBar.tooltip")
     }
 
     private func configureMenu() {
@@ -350,20 +399,20 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
         toggleMenuItem.action = #selector(toggleFocusFix)
         menu.addItem(toggleMenuItem)
 
-        reclickMenuItem.title = "备用模式：激活后二次点击"
+        reclickMenuItem.title = L10n.tr("menu.reclickAfterActivation")
         reclickMenuItem.target = self
         reclickMenuItem.action = #selector(toggleReclick)
         menu.addItem(reclickMenuItem)
 
         menu.addItem(.separator())
 
-        let accessibilityItem = NSMenuItem(title: "打开辅助功能设置", action: #selector(openAccessibilitySettings), keyEquivalent: "")
+        let accessibilityItem = NSMenuItem(title: L10n.tr("menu.openAccessibilitySettings"), action: #selector(openAccessibilitySettings), keyEquivalent: "")
         accessibilityItem.target = self
         menu.addItem(accessibilityItem)
 
         menu.addItem(.separator())
 
-        let quitItem = NSMenuItem(title: "退出 MacFocusFix", action: #selector(quit), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: L10n.tr("menu.quit"), action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
 
@@ -380,8 +429,8 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
     }
 
     private func updateMenu() {
-        statusMenuItem.title = "状态：\(focusController.state.title)"
-        toggleMenuItem.title = focusController.isEnabled ? "关闭焦点修复" : "开启焦点修复"
+        statusMenuItem.title = String(format: L10n.tr("menu.statusFormat"), focusController.state.title)
+        toggleMenuItem.title = focusController.isEnabled ? L10n.tr("menu.disableFocusFix") : L10n.tr("menu.enableFocusFix")
         reclickMenuItem.state = focusController.isReclickEnabled ? .on : .off
 
         guard let button = statusItem.button else { return }
@@ -477,16 +526,10 @@ private func parseOptions() -> Options {
         case "--reclick":
             options.reclickAfterActivation = true
         case "--help", "-h":
-            print("""
-            usage: MacFocusFix [--always] [--reclick]
-
-              --always   Run even when UURemote is not running.
-              --reclick  After activating the target app, send one local left click at the same point.
-                         This is a fallback for text fields that still do not accept typing.
-            """)
+            print(L10n.tr("help.usage"))
             exit(0)
         default:
-            print("Unknown argument: \(argument)")
+            print(String(format: L10n.tr("error.unknownArgument"), argument))
             exit(2)
         }
     }

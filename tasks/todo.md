@@ -94,3 +94,19 @@
 - Added the app icon to both README files using the 1024x1024 Icon Composer export from `macOS-Windows-FIX Exports`.
 - Confirmed `script/build_app.sh` already packages the same icon source into `dist/MacFocusFix.app/Contents/Resources/AppIcon.icns`.
 - Verified `./script/build_app.sh`, `file dist/MacFocusFix.app/Contents/Resources/AppIcon.icns`, and `codesign --verify --deep --strict --verbose=2 dist/MacFocusFix.app`.
+
+## App Localization Plan
+
+- [x] Replace user-visible strings in the app with localization keys.
+  - Verify: `main.swift` menu, tooltip, permission, status, and help text use localized lookups.
+- [x] Add English and Simplified Chinese string resources.
+  - Verify: `en.lproj/Localizable.strings` and `zh-Hans.lproj/Localizable.strings` are packaged into the app resource bundle.
+- [x] Build and verify packaged localization resources.
+  - Verify: `./script/build_app.sh` succeeds and the app bundle contains both localization directories.
+
+## App Localization Review
+
+- Added a small `L10n` helper that picks the first supported preferred language from system language order: English, Simplified Chinese, then English fallback.
+- Localized menu bar tooltip, menu items, status text, permission console messages, errors, and CLI help.
+- Added `en.lproj/Localizable.strings` and `zh-Hans.lproj/Localizable.strings` under SwiftPM resources.
+- Verified `swift build`, `.strings` linting, English and Chinese help-text probes via `AppleLanguages`, `./script/build_app.sh`, packaged resource paths, and codesign verification.

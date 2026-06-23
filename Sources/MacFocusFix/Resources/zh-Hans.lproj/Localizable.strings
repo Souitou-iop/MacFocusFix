@@ -1,0 +1,25 @@
+"status.disabled" = "已关闭";
+"status.waitingForPermission" = "等待辅助功能授权";
+"status.active" = "已开启";
+
+"error.eventTapCreateFailed" = "无法创建鼠标事件监听。请重新检查 MacFocusFix 的辅助功能/输入监控权限。";
+"error.unknownArgument" = "未知参数：%@";
+
+"console.running" = "MacFocusFix 正在运行。按 Ctrl-C 停止。";
+"console.mode" = "模式：%@%@";
+"console.waitingForPermission" = "MacFocusFix 正在等待辅助功能权限。";
+"console.permissionInstructions" = "请在“系统设置 > 隐私与安全性 > 辅助功能”中授权。授权后会自动启动鼠标监听。";
+
+"mode.uuRemoteOnly" = "仅在 UURemote 运行时生效";
+"mode.alwaysOn" = "始终生效";
+"mode.reclickSuffix" = "，已开启二次点击";
+
+"menuBar.tooltip" = "MacFocusFix 焦点修复";
+"menu.statusFormat" = "状态：%@";
+"menu.enableFocusFix" = "开启焦点修复";
+"menu.disableFocusFix" = "关闭焦点修复";
+"menu.reclickAfterActivation" = "备用模式：激活后二次点击";
+"menu.openAccessibilitySettings" = "打开辅助功能设置";
+"menu.quit" = "退出 MacFocusFix";
+
+"help.usage" = "usage: MacFocusFix [--always] [--reclick]\n\n  --always   即使 UURemote 未运行也生效。\n  --reclick  激活目标 App 后，在同一位置发送一次本地左键点击。\n             这是给仍不能输入的文本框使用的兜底模式。";

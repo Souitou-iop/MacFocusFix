@@ -4,6 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "MacFocusFix",
+    defaultLocalization: "en",
     platforms: [
         .macOS(.v14)
     ],

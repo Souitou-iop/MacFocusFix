@@ -1,0 +1,25 @@
+"status.disabled" = "Off";
+"status.waitingForPermission" = "Waiting for Accessibility permission";
+"status.active" = "On";
+
+"error.eventTapCreateFailed" = "Could not create the mouse event tap. Recheck Accessibility/Input Monitoring permission for MacFocusFix.";
+"error.unknownArgument" = "Unknown argument: %@";
+
+"console.running" = "MacFocusFix is running. Press Ctrl-C to stop.";
+"console.mode" = "Mode: %@%@";
+"console.waitingForPermission" = "MacFocusFix is waiting for Accessibility permission.";
+"console.permissionInstructions" = "Grant it in System Settings > Privacy & Security > Accessibility. It will start automatically after permission is granted.";
+
+"mode.uuRemoteOnly" = "only while UURemote is running";
+"mode.alwaysOn" = "always on";
+"mode.reclickSuffix" = ", reclick enabled";
+
+"menuBar.tooltip" = "MacFocusFix Focus Fix";
+"menu.statusFormat" = "Status: %@";
+"menu.enableFocusFix" = "Enable Focus Fix";
+"menu.disableFocusFix" = "Disable Focus Fix";
+"menu.reclickAfterActivation" = "Fallback: Reclick After Activation";
+"menu.openAccessibilitySettings" = "Open Accessibility Settings";
+"menu.quit" = "Quit MacFocusFix";
+
+"help.usage" = "usage: MacFocusFix [--always] [--reclick]\n\n  --always   Run even when UURemote is not running.\n  --reclick  After activating the target app, send one local left click at the same point.\n             This is a fallback for text fields that still do not accept typing.";

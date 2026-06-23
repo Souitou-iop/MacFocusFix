@@ -55,7 +55,6 @@ private enum L10n {
 
 private struct Options {
     var requireUURemote = true
-    var reclickAfterActivation = false
     var activationDelay: TimeInterval = 0.06
 }
 
@@ -96,10 +95,6 @@ private final class FocusController {
         state != .disabled
     }
 
-    var isReclickEnabled: Bool {
-        options.reclickAfterActivation
-    }
-
     func start(prompt: Bool = true) {
         if installEventTapWhenTrusted(prompt: prompt) {
             printStatus()
@@ -128,11 +123,6 @@ private final class FocusController {
 
         setState(.disabled)
         logger.info("MacFocusFix event tap is disabled")
-    }
-
-    func setReclickEnabled(_ enabled: Bool) {
-        options.reclickAfterActivation = enabled
-        onStateChanged?()
     }
 
     func suppressBriefly(for interval: TimeInterval = 0.35) {
@@ -195,8 +185,7 @@ private final class FocusController {
     private func printStatus() {
         print(L10n.tr("console.running"))
         let mode = options.requireUURemote ? L10n.tr("mode.uuRemoteOnly") : L10n.tr("mode.alwaysOn")
-        let reclick = options.reclickAfterActivation ? L10n.tr("mode.reclickSuffix") : ""
-        print(String(format: L10n.tr("console.mode"), mode, reclick))
+        print(String(format: L10n.tr("console.mode"), mode))
         logger.info("MacFocusFix event tap is active")
     }
 
@@ -271,9 +260,6 @@ private final class FocusController {
         lastActivation = Date()
         logger.info("Activated pid \(pid, privacy: .public) at x=\(location.x, privacy: .public) y=\(location.y, privacy: .public)")
 
-        if options.reclickAfterActivation {
-            reclick(at: location)
-        }
     }
 
     private func isIgnoredSystemUI(at location: CGPoint) -> Bool {
@@ -348,15 +334,6 @@ private final class FocusController {
             bundleIdentifier == "com.apple.TextInputMenuAgent"
     }
 
-    private func reclick(at location: CGPoint) {
-        guard let down = CGEvent(mouseEventSource: nil, mouseType: .leftMouseDown, mouseCursorPosition: location, mouseButton: .left),
-              let up = CGEvent(mouseEventSource: nil, mouseType: .leftMouseUp, mouseCursorPosition: location, mouseButton: .left) else {
-            return
-        }
-
-        down.post(tap: .cghidEventTap)
-        up.post(tap: .cghidEventTap)
-    }
 }
 
 private enum UURemoteDetector {
@@ -374,7 +351,6 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
     private let menu = NSMenu()
     private let statusMenuItem = NSMenuItem()
     private let toggleMenuItem = NSMenuItem()
-    private let reclickMenuItem = NSMenuItem()
 
     init(focusController: FocusController) {
         self.focusController = focusController
@@ -410,13 +386,6 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
         toggleMenuItem.action = #selector(toggleFocusFix)
         menu.addItem(toggleMenuItem)
 
-        reclickMenuItem.title = L10n.tr("menu.reclickAfterActivation")
-        reclickMenuItem.target = self
-        reclickMenuItem.action = #selector(toggleReclick)
-        menu.addItem(reclickMenuItem)
-
-        menu.addItem(.separator())
-
         let accessibilityItem = NSMenuItem(title: L10n.tr("menu.openAccessibilitySettings"), action: #selector(openAccessibilitySettings), keyEquivalent: "")
         accessibilityItem.target = self
         menu.addItem(accessibilityItem)
@@ -442,7 +411,6 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
     private func updateMenu() {
         statusMenuItem.title = String(format: L10n.tr("menu.statusFormat"), focusController.state.title)
         toggleMenuItem.title = focusController.isEnabled ? L10n.tr("menu.disableFocusFix") : L10n.tr("menu.enableFocusFix")
-        reclickMenuItem.state = focusController.isReclickEnabled ? .on : .off
 
         guard let button = statusItem.button else { return }
         button.image = statusImage(active: focusController.state == .active, appearance: button.effectiveAppearance)
@@ -493,10 +461,6 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
         }
     }
 
-    @objc private func toggleReclick() {
-        focusController.setReclickEnabled(!focusController.isReclickEnabled)
-    }
-
     @objc private func openAccessibilitySettings() {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
             NSWorkspace.shared.open(url)
@@ -534,8 +498,6 @@ private func parseOptions() -> Options {
         switch argument {
         case "--always":
             options.requireUURemote = false
-        case "--reclick":
-            options.reclickAfterActivation = true
         case "--help", "-h":
             print(L10n.tr("help.usage"))
             exit(0)

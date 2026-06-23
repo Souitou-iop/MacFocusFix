@@ -26,9 +26,6 @@ case "$MODE" in
   --always|always)
     open_app --always
     ;;
-  --reclick|reclick)
-    open_app --reclick
-    ;;
   --debug|debug)
     lldb -- "$APP_BINARY"
     ;;
@@ -46,7 +43,7 @@ case "$MODE" in
     pgrep -x "$APP_NAME" >/dev/null
     ;;
   *)
-    echo "usage: $0 [run|--always|--reclick|--debug|--logs|--telemetry|--verify]" >&2
+    echo "usage: $0 [run|--always|--debug|--logs|--telemetry|--verify]" >&2
     exit 2
     ;;
 esac

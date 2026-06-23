@@ -32,7 +32,6 @@ MacFocusFix is the small local workaround that came out of that investigation. I
 
 - Menu bar only: no Dock icon.
 - Enable or disable the focus fix from the menu bar.
-- Optional fallback mode that sends one local click after activation.
 - Ignores the macOS menu bar and known system UI processes, so Control Center, Wi-Fi, and input method controls keep working normally.
 - Uses the bundled app icon from the Icon Composer export and a separate template-style menu bar icon.
 
@@ -50,7 +49,6 @@ Official tagged releases are configured to be Developer ID signed and notarized.
 
 - Status: shows whether the helper is on, off, or waiting for Accessibility permission.
 - Enable / Disable Focus Fix: installs or removes the mouse event listener.
-- Reclick After Activation: fallback for apps that activate but still do not accept typing.
 - Open Accessibility Settings
 - Quit MacFocusFix
 

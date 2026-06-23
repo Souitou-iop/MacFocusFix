@@ -146,3 +146,18 @@
 - Updated `.github/workflows/release.yml` so tag releases require Developer ID and Apple notarization secrets, import the `.p12` certificate, sign, notarize, staple, zip, and publish.
 - Updated English and Chinese READMEs to explain stable Developer ID signing, notarization, and why ad-hoc builds can require Accessibility re-authorization.
 - Verified local ad-hoc fallback with `./script/build_app.sh`, script syntax checks, workflow YAML parsing, generated Info.plist fields, and codesign inspection.
+
+## Reclick Fallback Removal Plan
+
+- [x] Remove the reclick fallback from app behavior.
+  - Verify: `main.swift` no longer posts synthetic local clicks after activation.
+- [x] Remove reclick controls from the menu, CLI, script, localized strings, and README files.
+  - Verify: no active source or user-facing documentation mentions `--reclick` or the reclick fallback.
+- [x] Build and run the app.
+  - Verify: `swift build`, `.strings` linting, and `./script/build_and_run.sh --verify` succeed.
+
+## Reclick Fallback Removal Review
+
+- Removed the synthetic post-activation click path because it can interfere with window dragging and other pointer gestures.
+- Removed the menu item, CLI option, build/run script mode, localization keys, and README mentions for the fallback.
+- Verified `swift build`, `plutil -lint`, English and Chinese `--help`, `./script/build_and_run.sh --verify`, and searched active source/docs for reclick leftovers.

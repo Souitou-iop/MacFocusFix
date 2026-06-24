@@ -2,6 +2,7 @@
 set -euo pipefail
 
 CONFIGURATION="${CONFIGURATION:-debug}"
+APP_ARCH="${APP_ARCH:-native}"
 APP_NAME="MacFocusFix"
 BUNDLE_ID="win.ebato.MacFocusFix"
 MIN_SYSTEM_VERSION="14.0"
@@ -25,17 +26,23 @@ cd "$ROOT_DIR"
 mkdir -p "$DIST_DIR"
 
 if [[ "$CONFIGURATION" == "release" ]]; then
-  ARM_TRIPLE="arm64-apple-macosx$MIN_SYSTEM_VERSION"
-  X86_TRIPLE="x86_64-apple-macosx$MIN_SYSTEM_VERSION"
-  BUILD_DIR="$(swift build --configuration release --triple "$ARM_TRIPLE" --show-bin-path)"
-  ARM_BINARY="$DIST_DIR/$APP_NAME-arm64"
-  X86_BINARY="$DIST_DIR/$APP_NAME-x86_64"
+  if [[ "$APP_ARCH" == "native" ]]; then
+    APP_ARCH="$(uname -m)"
+  fi
 
-  swift build --configuration release --triple "$ARM_TRIPLE"
-  cp "$BUILD_DIR/$APP_NAME" "$ARM_BINARY"
+  case "$APP_ARCH" in
+    arm64|x86_64)
+      BUILD_TRIPLE="$APP_ARCH-apple-macosx$MIN_SYSTEM_VERSION"
+      ;;
+    *)
+      echo "Unsupported APP_ARCH: $APP_ARCH" >&2
+      exit 2
+      ;;
+  esac
 
-  swift build --configuration release --triple "$X86_TRIPLE"
-  cp "$BUILD_DIR/$APP_NAME" "$X86_BINARY"
+  BUILD_DIR="$(swift build --configuration release --triple "$BUILD_TRIPLE" --show-bin-path)"
+  swift build --configuration release --triple "$BUILD_TRIPLE"
+  BUILD_BINARY="$BUILD_DIR/$APP_NAME"
 else
   swift build
   BUILD_DIR="$(swift build --show-bin-path)"
@@ -45,12 +52,7 @@ RESOURCE_BUNDLE="$BUILD_DIR/MacFocusFix_MacFocusFix.bundle"
 
 rm -rf "$APP_BUNDLE"
 mkdir -p "$APP_MACOS" "$APP_RESOURCES"
-if [[ "$CONFIGURATION" == "release" ]]; then
-  lipo -create "$ARM_BINARY" "$X86_BINARY" -output "$APP_BINARY"
-  rm -f "$ARM_BINARY" "$X86_BINARY"
-else
-  cp "$BUILD_BINARY" "$APP_BINARY"
-fi
+cp "$BUILD_BINARY" "$APP_BINARY"
 chmod +x "$APP_BINARY"
 
 if [[ -d "$RESOURCE_BUNDLE" ]]; then

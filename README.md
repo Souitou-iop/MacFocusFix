@@ -96,4 +96,4 @@ Quit MacFocusFix, then move `MacFocusFix.app` to the Trash. If you granted Acces
 
 ## Compatibility
 
-MacFocusFix is built with SwiftPM and targets macOS 14 or later. Release builds are universal and include both Apple Silicon and Intel Mac binaries.
+MacFocusFix is built with SwiftPM and targets macOS 14 or later. Releases provide separate downloads for Apple Silicon (`arm64`) and Intel Macs (`x86_64`).

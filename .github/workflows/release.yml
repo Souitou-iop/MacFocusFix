@@ -72,37 +72,38 @@ jobs:
           fi
           echo "APP_VERSION=${VERSION}" >> "$GITHUB_ENV"
 
-      - name: Build app bundle
+      - name: Build and archive app bundles
         run: |
           if [[ "${SIGNING_AVAILABLE}" == "true" ]]; then
             export SIGN_IDENTITY="${DEVELOPER_ID_SIGNING_IDENTITY}"
           else
             export SIGN_IDENTITY="-"
           fi
-          ./script/build_app.sh
+
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [[ "${GITHUB_REF_TYPE}" != "tag" ]]; then
+            VERSION="manual-${GITHUB_SHA::7}"
+          fi
+
+          rm -f dist/*.zip
+          for ARCH in arm64 x86_64; do
+            APP_ARCH="${ARCH}" ./script/build_app.sh
+
+            if [[ "${GITHUB_REF_TYPE}" == "tag" && "${SIGNING_AVAILABLE}" == "true" ]]; then
+              ./script/notarize_app.sh
+            fi
+
+            ZIP_NAME="MacFocusFix-${VERSION}-macOS-${ARCH}.zip"
+            ditto -c -k --sequesterRsrc --keepParent dist/MacFocusFix.app "dist/${ZIP_NAME}"
+          done
         env:
           CONFIGURATION: release
           APP_BUILD: ${{ github.run_number }}
           SIGNING_AVAILABLE: ${{ github.ref_type == 'tag' && steps.signing.outputs.available == 'true' && 'true' || 'false' }}
           DEVELOPER_ID_SIGNING_IDENTITY: ${{ secrets.DEVELOPER_ID_SIGNING_IDENTITY }}
-
-      - name: Notarize app bundle
-        if: github.ref_type == 'tag' && steps.signing.outputs.available == 'true'
-        run: ./script/notarize_app.sh
-        env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
-
-      - name: Archive app bundle
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          if [[ "${GITHUB_REF_TYPE}" != "tag" ]]; then
-            VERSION="manual-${GITHUB_SHA::7}"
-          fi
-          ZIP_NAME="MacFocusFix-${VERSION}-macOS.zip"
-          ditto -c -k --sequesterRsrc --keepParent dist/MacFocusFix.app "dist/${ZIP_NAME}"
-          echo "ZIP_NAME=${ZIP_NAME}" >> "$GITHUB_ENV"
 
       - name: Upload release artifact
         uses: actions/upload-artifact@v7
@@ -115,5 +116,5 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           repository: Souitou-iop/macOS-Windows-FIX
-          files: dist/${{ env.ZIP_NAME }}
+          files: dist/*.zip
           generate_release_notes: true

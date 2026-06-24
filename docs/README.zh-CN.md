@@ -96,4 +96,4 @@ SIGN_IDENTITY="Developer ID Application: Name (TEAMID)" ./script/build_app.sh
 
 ## 兼容性
 
-MacFocusFix 使用 SwiftPM 构建，目标系统为 macOS 14 或更新版本。Release 构建为 universal app，同时包含 Apple Silicon 和 Intel Mac 二进制。
+MacFocusFix 使用 SwiftPM 构建，目标系统为 macOS 14 或更新版本。Release 会分别提供 Apple Silicon（`arm64`）和 Intel Mac（`x86_64`）下载包。

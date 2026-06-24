@@ -177,3 +177,19 @@
 - Tag releases now build with ad hoc signing and still publish a Release zip when Developer ID secrets are absent.
 - Developer ID certificate import and notarization still run only when all signing and Apple notarization secrets are present.
 - Verified workflow YAML parsing with Ruby and checked the diff for whitespace errors.
+
+## Universal Build, System UI Filters, And Login Item Plan
+
+- [x] Build release app bundles as universal arm64 + x86_64 binaries.
+  - Verify: packaged app executable reports both architectures.
+- [x] Extend system UI filtering for Notification Center, Spotlight, Siri, and Screenshot.
+  - Verify: bundle identifiers are included in the ignored system UI set.
+- [x] Add a menu bar Launch at Login toggle.
+  - Verify: app builds with ServiceManagement and localized menu strings are valid.
+
+## Universal Build, System UI Filters, And Login Item Review
+
+- Release app packaging now builds arm64 and x86_64 binaries and merges them with `lipo`.
+- Added ignored system UI bundle identifiers for Notification Center, Spotlight, Siri, and Screenshot, while keeping the existing menu bar, Control Center, Dock, and input menu filters.
+- Added a localized Launch at Login menu item using `SMAppService.mainApp`.
+- Verified `plutil -lint`, `swift build`, `CONFIGURATION=release ./script/build_app.sh`, `lipo -info`, `codesign --verify --deep --strict`, packaged resources, and `./script/build_and_run.sh --verify`.

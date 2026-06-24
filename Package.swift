@@ -19,7 +19,8 @@ let package = Package(
             ],
             linkerSettings: [
                 .linkedFramework("ApplicationServices"),
-                .linkedFramework("AppKit")
+                .linkedFramework("AppKit"),
+                .linkedFramework("ServiceManagement")
             ]
         )
     ]

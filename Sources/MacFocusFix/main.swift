@@ -2,9 +2,21 @@ import AppKit
 import ApplicationServices
 import Foundation
 import os
+import ServiceManagement
 
 private let bundleID = "win.ebato.MacFocusFix"
 private let logger = Logger(subsystem: bundleID, category: "focus")
+private let ignoredSystemUIBundleIdentifiers: Set<String> = [
+    "com.apple.systemuiserver",
+    "com.apple.controlcenter",
+    "com.apple.dock",
+    "com.apple.TextInputMenuAgent",
+    "com.apple.notificationcenterui",
+    "com.apple.Spotlight",
+    "com.apple.Siri",
+    "com.apple.siri.launcher",
+    "com.apple.screenshot.launcher"
+]
 
 private enum L10n {
     private static let bundle: Bundle = {
@@ -328,10 +340,7 @@ private final class FocusController {
             return false
         }
 
-        return bundleIdentifier == "com.apple.systemuiserver" ||
-            bundleIdentifier == "com.apple.controlcenter" ||
-            bundleIdentifier == "com.apple.dock" ||
-            bundleIdentifier == "com.apple.TextInputMenuAgent"
+        return ignoredSystemUIBundleIdentifiers.contains(bundleIdentifier)
     }
 
 }
@@ -351,6 +360,7 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
     private let menu = NSMenu()
     private let statusMenuItem = NSMenuItem()
     private let toggleMenuItem = NSMenuItem()
+    private let launchAtLoginMenuItem = NSMenuItem()
 
     init(focusController: FocusController) {
         self.focusController = focusController
@@ -390,6 +400,10 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
         accessibilityItem.target = self
         menu.addItem(accessibilityItem)
 
+        launchAtLoginMenuItem.target = self
+        launchAtLoginMenuItem.action = #selector(toggleLaunchAtLogin)
+        menu.addItem(launchAtLoginMenuItem)
+
         menu.addItem(.separator())
 
         let quitItem = NSMenuItem(title: L10n.tr("menu.quit"), action: #selector(quit), keyEquivalent: "q")
@@ -411,6 +425,7 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
     private func updateMenu() {
         statusMenuItem.title = String(format: L10n.tr("menu.statusFormat"), focusController.state.title)
         toggleMenuItem.title = focusController.isEnabled ? L10n.tr("menu.disableFocusFix") : L10n.tr("menu.enableFocusFix")
+        updateLaunchAtLoginMenuItem()
 
         guard let button = statusItem.button else { return }
         button.image = statusImage(active: focusController.state == .active, appearance: button.effectiveAppearance)
@@ -453,12 +468,60 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
         return NSImage(contentsOf: url)
     }
 
+    private func updateLaunchAtLoginMenuItem() {
+        switch SMAppService.mainApp.status {
+        case .enabled:
+            launchAtLoginMenuItem.title = L10n.tr("menu.launchAtLogin")
+            launchAtLoginMenuItem.state = .on
+            launchAtLoginMenuItem.isEnabled = true
+        case .requiresApproval:
+            launchAtLoginMenuItem.title = L10n.tr("menu.launchAtLoginRequiresApproval")
+            launchAtLoginMenuItem.state = .mixed
+            launchAtLoginMenuItem.isEnabled = true
+        case .notRegistered, .notFound:
+            launchAtLoginMenuItem.title = L10n.tr("menu.launchAtLogin")
+            launchAtLoginMenuItem.state = .off
+            launchAtLoginMenuItem.isEnabled = true
+        @unknown default:
+            launchAtLoginMenuItem.title = L10n.tr("menu.launchAtLogin")
+            launchAtLoginMenuItem.state = .off
+            launchAtLoginMenuItem.isEnabled = true
+        }
+    }
+
     @objc private func toggleFocusFix() {
         if focusController.isEnabled {
             focusController.stop()
         } else {
             focusController.start(prompt: true)
         }
+    }
+
+    @objc private func toggleLaunchAtLogin() {
+        do {
+            switch SMAppService.mainApp.status {
+            case .enabled, .requiresApproval:
+                try SMAppService.mainApp.unregister()
+            case .notRegistered, .notFound:
+                try SMAppService.mainApp.register()
+            @unknown default:
+                try SMAppService.mainApp.register()
+            }
+        } catch {
+            logger.error("Could not update Launch at Login: \(error.localizedDescription, privacy: .public)")
+            showLaunchAtLoginError(error)
+        }
+
+        updateMenu()
+    }
+
+    private func showLaunchAtLoginError(_ error: Error) {
+        let alert = NSAlert()
+        alert.messageText = L10n.tr("error.launchAtLoginUpdateFailed")
+        alert.informativeText = error.localizedDescription
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: L10n.tr("alert.ok"))
+        alert.runModal()
     }
 
     @objc private func openAccessibilitySettings() {

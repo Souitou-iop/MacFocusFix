@@ -22,20 +22,35 @@ ICONSET_DIR="$DIST_DIR/AppIcon.iconset"
 APP_ICON="$APP_RESOURCES/AppIcon.icns"
 
 cd "$ROOT_DIR"
+mkdir -p "$DIST_DIR"
 
 if [[ "$CONFIGURATION" == "release" ]]; then
-  swift build --configuration release
-  BUILD_DIR="$(swift build --configuration release --show-bin-path)"
+  ARM_TRIPLE="arm64-apple-macosx$MIN_SYSTEM_VERSION"
+  X86_TRIPLE="x86_64-apple-macosx$MIN_SYSTEM_VERSION"
+  BUILD_DIR="$(swift build --configuration release --triple "$ARM_TRIPLE" --show-bin-path)"
+  ARM_BINARY="$DIST_DIR/$APP_NAME-arm64"
+  X86_BINARY="$DIST_DIR/$APP_NAME-x86_64"
+
+  swift build --configuration release --triple "$ARM_TRIPLE"
+  cp "$BUILD_DIR/$APP_NAME" "$ARM_BINARY"
+
+  swift build --configuration release --triple "$X86_TRIPLE"
+  cp "$BUILD_DIR/$APP_NAME" "$X86_BINARY"
 else
   swift build
   BUILD_DIR="$(swift build --show-bin-path)"
+  BUILD_BINARY="$BUILD_DIR/$APP_NAME"
 fi
-BUILD_BINARY="$BUILD_DIR/$APP_NAME"
 RESOURCE_BUNDLE="$BUILD_DIR/MacFocusFix_MacFocusFix.bundle"
 
 rm -rf "$APP_BUNDLE"
 mkdir -p "$APP_MACOS" "$APP_RESOURCES"
-cp "$BUILD_BINARY" "$APP_BINARY"
+if [[ "$CONFIGURATION" == "release" ]]; then
+  lipo -create "$ARM_BINARY" "$X86_BINARY" -output "$APP_BINARY"
+  rm -f "$ARM_BINARY" "$X86_BINARY"
+else
+  cp "$BUILD_BINARY" "$APP_BINARY"
+fi
 chmod +x "$APP_BINARY"
 
 if [[ -d "$RESOURCE_BUNDLE" ]]; then

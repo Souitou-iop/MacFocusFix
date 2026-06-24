@@ -32,7 +32,8 @@ MacFocusFix is the small local workaround that came out of that investigation. I
 
 - Menu bar only: no Dock icon.
 - Enable or disable the focus fix from the menu bar.
-- Ignores the macOS menu bar and known system UI processes, so Control Center, Wi-Fi, and input method controls keep working normally.
+- Optional Launch at Login toggle from the menu bar.
+- Ignores the macOS menu bar and known system UI processes, so Control Center, Wi-Fi, input method controls, Notification Center, Spotlight, Siri, and Screenshot keep working normally.
 - Uses the bundled app icon from the Icon Composer export and a separate template-style menu bar icon.
 
 ## Installation
@@ -95,4 +96,4 @@ Quit MacFocusFix, then move `MacFocusFix.app` to the Trash. If you granted Acces
 
 ## Compatibility
 
-MacFocusFix is built with SwiftPM and targets macOS 14 or later.
+MacFocusFix is built with SwiftPM and targets macOS 14 or later. Release builds are universal and include both Apple Silicon and Intel Mac binaries.

@@ -205,6 +205,6 @@
 
 ## Covered Window Raise Fix Review
 
-- Added `kAXRaiseAction` on the target AX window before setting main/focused window attributes.
+- Added a two-stage raise/focus sequence: activate the target app, set AX frontmost/focused/main window, perform `kAXRaiseAction`, then repeat the window raise shortly after activation settles.
 - Kept foreground app activation and did not reintroduce synthetic reclick behavior.
 - Verified `swift build` and `./script/build_app.sh`.

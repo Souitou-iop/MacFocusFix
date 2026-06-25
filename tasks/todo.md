@@ -208,3 +208,16 @@
 - Replaced `Bundle.module` calls with an app-bundle-aware resource lookup that finds `MacFocusFix_MacFocusFix.bundle` under `Contents/Resources`.
 - Kept the bundle in the standard macOS app resource location so codesign verification succeeds.
 - Verified `swift build`, `./script/build_app.sh`, arm64 release packaging, zip/unzip, and launching the unzipped `.app`.
+
+## Frontmost App Click Safety Plan
+
+- [x] Skip focus activation when the clicked target already belongs to the frontmost app.
+  - Verify: foreground app toolbar controls are left to the app's own click handling.
+- [x] Build and package the app.
+  - Verify: `swift build` and release-style app packaging succeed.
+
+## Frontmost App Click Safety Review
+
+- Added a narrow guard before AX focus changes and `NSRunningApplication.activate()` so clicks inside the already-frontmost application are not touched by MacFocusFix.
+- This keeps the workaround focused on cross-app/background-app activation and avoids interfering with Edge toolbar buttons such as extensions, history, and favorites.
+- Verified `swift build`, `./script/build_app.sh`, and separate arm64/x86_64 release packaging.

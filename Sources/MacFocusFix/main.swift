@@ -297,6 +297,7 @@ private final class FocusController {
         guard !isMenuBarLocation(location) else { return }
         guard let (element, pid) = elementAndProcessIdentifier(at: location), pid != getpid() else { return }
         guard !isSystemUIProcess(pid: pid) else { return }
+        guard NSWorkspace.shared.frontmostApplication?.processIdentifier != pid else { return }
 
         let appElement = AXUIElementCreateApplication(pid)
         let window = focusedWindowCandidate(from: element)

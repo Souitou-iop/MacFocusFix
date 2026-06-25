@@ -208,3 +208,48 @@
 - Added a two-stage raise/focus sequence: activate the target app, set AX frontmost/focused/main window, perform `kAXRaiseAction`, then repeat the window raise shortly after activation settles.
 - Kept foreground app activation and did not reintroduce synthetic reclick behavior.
 - Verified `swift build` and `./script/build_app.sh`.
+
+## Window Control Button Ignore Plan
+
+- [x] Ignore standard macOS window control buttons before scheduling delayed activation.
+  - Verify: close, minimize, zoom, and full-screen AX button subroles are filtered.
+- [x] Keep delayed activation guarded against the same window control targets.
+  - Verify: activation path rechecks the target element before raise/focus.
+- [x] Build and package the app.
+  - Verify: `swift build` and `./script/build_app.sh` succeed.
+
+## Window Control Button Ignore Review
+
+- Added an AX subrole filter for close, minimize, zoom, and full-screen window control buttons.
+- Applied the filter before scheduling delayed activation and again immediately before raise/focus.
+- Verified `swift build`, `./script/build_app.sh`, codesign verification, and local launch.
+
+## Window Chrome Ignore Plan
+
+- [x] Ignore clicks inside macOS window tab groups and toolbars.
+  - Verify: activation filtering checks the clicked element and its parents for `AXTabGroup` and `AXToolbar`.
+- [x] Keep Finder tab switching and browser toolbar buttons outside the delayed raise/focus path.
+  - Verify: the delayed activation path rechecks window-chrome ancestry before raising a window.
+- [x] Build and package the app.
+  - Verify: `swift build` and `./script/build_app.sh` succeed.
+
+## Window Chrome Ignore Review
+
+- Added parent-chain detection for `AXTabGroup` and `AXToolbar` so Finder tabs, browser tab chrome, and browser toolbar buttons do not enter the delayed raise/focus path.
+- Applied the window-chrome filter both before scheduling activation and again before raise/focus runs.
+- Verified `swift build`, `./script/build_app.sh`, codesign verification, and local launch.
+
+## Right Click Context Menu Safety Plan
+
+- [x] Stop handling right-click and other-button mouse down events.
+  - Verify: event tap only listens for left mouse down.
+- [x] Keep the focus workaround scoped to normal left-click activation.
+  - Verify: `handleMouseDown` ignores non-left mouse down events if called.
+- [x] Build and package the app.
+  - Verify: `swift build` and `./script/build_app.sh` succeed.
+
+## Right Click Context Menu Safety Review
+
+- Reduced the event tap mask to left mouse down only.
+- Added a defensive non-left mouse down guard in `handleMouseDown`.
+- Verified `swift build`, `./script/build_app.sh`, codesign verification, and local launch.

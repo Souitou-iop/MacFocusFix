@@ -261,30 +261,18 @@ private final class FocusController {
         let appElement = AXUIElementCreateApplication(pid)
         let window = focusedWindowCandidate(from: element)
 
-        guard let app = NSRunningApplication(processIdentifier: pid) else { return }
-        app.activate()
-        raiseAndFocus(window: window, appElement: appElement)
-
         if let window {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.04) { [weak self] in
-                guard let self, Date() >= self.suppressedUntil else { return }
-                self.raiseAndFocus(window: window, appElement: appElement)
-            }
+            AXUIElementPerformAction(window, kAXRaiseAction as CFString)
+            AXUIElementSetAttributeValue(window, kAXMainAttribute as CFString, kCFBooleanTrue)
+            AXUIElementSetAttributeValue(window, kAXFocusedAttribute as CFString, kCFBooleanTrue)
+            AXUIElementSetAttributeValue(appElement, kAXFocusedWindowAttribute as CFString, window)
         }
 
+        guard let app = NSRunningApplication(processIdentifier: pid) else { return }
+        app.activate()
         lastActivation = Date()
         logger.info("Activated pid \(pid, privacy: .public) at x=\(location.x, privacy: .public) y=\(location.y, privacy: .public)")
 
-    }
-
-    private func raiseAndFocus(window: AXUIElement?, appElement: AXUIElement) {
-        AXUIElementSetAttributeValue(appElement, kAXFrontmostAttribute as CFString, kCFBooleanTrue)
-
-        guard let window else { return }
-        AXUIElementSetAttributeValue(appElement, kAXFocusedWindowAttribute as CFString, window)
-        AXUIElementSetAttributeValue(window, kAXMainAttribute as CFString, kCFBooleanTrue)
-        AXUIElementSetAttributeValue(window, kAXFocusedAttribute as CFString, kCFBooleanTrue)
-        AXUIElementPerformAction(window, kAXRaiseAction as CFString)
     }
 
     private func isIgnoredSystemUI(at location: CGPoint) -> Bool {

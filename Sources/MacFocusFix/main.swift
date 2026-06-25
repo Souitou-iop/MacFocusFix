@@ -17,12 +17,6 @@ private let ignoredSystemUIBundleIdentifiers: Set<String> = [
     "com.apple.siri.launcher",
     "com.apple.screenshot.launcher"
 ]
-private let ignoredWindowControlButtonSubroles: Set<String> = [
-    kAXCloseButtonSubrole,
-    kAXMinimizeButtonSubrole,
-    kAXZoomButtonSubrole,
-    kAXFullScreenButtonSubrole
-]
 
 private enum L10n {
     private static let bundle: Bundle = {
@@ -165,7 +159,10 @@ private final class FocusController {
             return true
         }
 
-        let mask = 1 << CGEventType.leftMouseDown.rawValue
+        let mask =
+            (1 << CGEventType.leftMouseDown.rawValue) |
+            (1 << CGEventType.rightMouseDown.rawValue) |
+            (1 << CGEventType.otherMouseDown.rawValue)
 
         let callback: CGEventTapCallBack = { _, type, event, refcon in
             guard let refcon else { return Unmanaged.passUnretained(event) }
@@ -221,14 +218,13 @@ private final class FocusController {
     }
 
     private func handleMouseDown(type: CGEventType, event: CGEvent) {
-        guard type == .leftMouseDown else { return }
         guard Date() >= suppressedUntil else { return }
         guard Date().timeIntervalSince(lastActivation) >= minimumActivationInterval else { return }
         guard !options.requireUURemote || UURemoteDetector.isRunning() else { return }
 
         let location = event.location
         guard !isMenuBarLocation(location) else { return }
-        guard !isIgnoredClickTarget(at: location) else { return }
+        guard !isIgnoredSystemUI(at: location) else { return }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + options.activationDelay) { [weak self] in
             self?.activateElement(at: location)
@@ -261,8 +257,6 @@ private final class FocusController {
         guard !isMenuBarLocation(location) else { return }
         guard let (element, pid) = elementAndProcessIdentifier(at: location), pid != getpid() else { return }
         guard !isSystemUIProcess(pid: pid) else { return }
-        guard !isWindowControlButton(element) else { return }
-        guard !isInsideWindowChrome(element) else { return }
 
         let appElement = AXUIElementCreateApplication(pid)
         let window = focusedWindowCandidate(from: element)
@@ -293,12 +287,9 @@ private final class FocusController {
         AXUIElementPerformAction(window, kAXRaiseAction as CFString)
     }
 
-    private func isIgnoredClickTarget(at location: CGPoint) -> Bool {
-        guard let (element, pid) = elementAndProcessIdentifier(at: location) else { return false }
-        return pid == getpid() ||
-            isSystemUIProcess(pid: pid) ||
-            isWindowControlButton(element) ||
-            isInsideWindowChrome(element)
+    private func isIgnoredSystemUI(at location: CGPoint) -> Bool {
+        guard let (_, pid) = elementAndProcessIdentifier(at: location) else { return false }
+        return pid == getpid() || isSystemUIProcess(pid: pid)
     }
 
     private func elementAndProcessIdentifier(at location: CGPoint) -> (element: AXUIElement, pid: pid_t)? {
@@ -348,49 +339,12 @@ private final class FocusController {
         return nil
     }
 
-    private func isInsideWindowChrome(_ element: AXUIElement) -> Bool {
-        var current: AXUIElement? = element
-
-        for _ in 0..<8 {
-            guard let item = current else { break }
-            let itemRole = role(of: item)
-            if itemRole == kAXTabGroupRole || itemRole == kAXToolbarRole {
-                return true
-            }
-
-            var rawParent: CFTypeRef?
-            guard AXUIElementCopyAttributeValue(item, kAXParentAttribute as CFString, &rawParent) == .success,
-                  CFGetTypeID(rawParent) == AXUIElementGetTypeID() else {
-                break
-            }
-            current = (rawParent as! AXUIElement)
-        }
-
-        return false
-    }
-
     private func role(of element: AXUIElement) -> String? {
         var rawRole: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &rawRole) == .success else {
             return nil
         }
         return rawRole as? String
-    }
-
-    private func subrole(of element: AXUIElement) -> String? {
-        var rawSubrole: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(element, kAXSubroleAttribute as CFString, &rawSubrole) == .success else {
-            return nil
-        }
-        return rawSubrole as? String
-    }
-
-    private func isWindowControlButton(_ element: AXUIElement) -> Bool {
-        guard role(of: element) == kAXButtonRole,
-              let subrole = subrole(of: element) else {
-            return false
-        }
-        return ignoredWindowControlButtonSubroles.contains(subrole)
     }
 
     private func isSystemUIProcess(pid: pid_t) -> Bool {

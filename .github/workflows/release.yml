@@ -66,10 +66,16 @@ jobs:
 
       - name: Resolve build version
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          if [[ "${GITHUB_REF_TYPE}" != "tag" ]]; then
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            if [[ ! "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Release tags must use semantic version format, for example v0.1.8." >&2
+              exit 2
+            fi
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
             VERSION="0.0.0-${GITHUB_SHA::7}"
           fi
+          echo "RELEASE_VERSION=${VERSION}" >> "$GITHUB_ENV"
           echo "APP_VERSION=${VERSION}" >> "$GITHUB_ENV"
 
       - name: Build and archive app bundles
@@ -80,11 +86,6 @@ jobs:
             export SIGN_IDENTITY="-"
           fi
 
-          VERSION="${GITHUB_REF_NAME#v}"
-          if [[ "${GITHUB_REF_TYPE}" != "tag" ]]; then
-            VERSION="manual-${GITHUB_SHA::7}"
-          fi
-
           rm -f dist/*.zip
           for ARCH in arm64 x86_64; do
             APP_ARCH="${ARCH}" ./script/build_app.sh
@@ -93,7 +94,7 @@ jobs:
               ./script/notarize_app.sh
             fi
 
-            ZIP_NAME="MacFocusFix-${VERSION}-macOS-${ARCH}.zip"
+            ZIP_NAME="MacFocusFix-${RELEASE_VERSION}-macOS-${ARCH}.zip"
             ditto -c -k --sequesterRsrc --keepParent dist/MacFocusFix.app "dist/${ZIP_NAME}"
           done
         env:
@@ -104,6 +105,32 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+
+      - name: Write release notes
+        if: github.ref_type == 'tag'
+        run: |
+          PREVIOUS_TAG="$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
+          if [[ -n "${PREVIOUS_TAG}" ]]; then
+            CHANGELOG_URL="https://github.com/Souitou-iop/macOS-Windows-FIX/compare/${PREVIOUS_TAG}...${GITHUB_REF_NAME}"
+          else
+            CHANGELOG_URL="https://github.com/Souitou-iop/macOS-Windows-FIX/commits/${GITHUB_REF_NAME}"
+          fi
+
+          cat > dist/release-notes.md <<EOF
+          ## Changes
+
+          - See the full changelog for commits included in this release.
+          - Release assets are provided separately for Apple Silicon (arm64) and Intel Macs (x86_64).
+
+          ## 更新内容
+
+          - 本版本包含的具体提交内容请查看完整更新对比。
+          - 安装包继续分别提供 Apple Silicon（arm64）和 Intel Mac（x86_64）版本。
+
+          **Full Changelog**: ${CHANGELOG_URL}
+          EOF
+
+          sed -i '' 's/^          //' dist/release-notes.md
 
       - name: Upload release artifact
         uses: actions/upload-artifact@v7
@@ -117,4 +144,4 @@ jobs:
         with:
           repository: Souitou-iop/macOS-Windows-FIX
           files: dist/*.zip
-          generate_release_notes: true
+          body_path: dist/release-notes.md

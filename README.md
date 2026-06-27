@@ -44,7 +44,7 @@ MacFocusFix is the small local workaround that came out of that investigation. I
 4. Launch the app.
 5. Grant Accessibility permission in System Settings when macOS asks for it.
 
-Official tagged releases are configured to be Developer ID signed and notarized. If you build the app locally, the local build uses ad hoc signing unless you provide your own signing identity.
+Official tagged releases are currently built with ad hoc signing. If you build the app locally, the local build also uses ad hoc signing unless you provide your own signing identity.
 
 ## Menu Bar
 
@@ -65,7 +65,7 @@ Official tagged releases are configured to be Developer ID signed and notarized.
 
 ## Releases
 
-GitHub Actions builds release artifacts on macOS. Pushing a tag such as `v0.1.0` signs the app with a Developer ID certificate, submits it for Apple notarization, staples the notarization ticket, then publishes a zipped `.app` bundle as a GitHub Release asset.
+GitHub Actions builds release artifacts on macOS. Pushing a tag such as `v0.1.0` publishes a zipped `.app` bundle as a GitHub Release asset. When Developer ID signing secrets are available, the workflow can sign and notarize the app; otherwise it falls back to ad hoc signing.
 
 This matters for Accessibility permission. macOS tracks trusted apps by code identity, not just by app name. Ad hoc builds can look like a different app after every rebuild, which may require granting Accessibility permission again. A stable Developer ID signature keeps the identity consistent across updates.
 

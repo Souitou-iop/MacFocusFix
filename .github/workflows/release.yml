@@ -113,9 +113,9 @@ jobs:
         run: |
           PREVIOUS_TAG="$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
           if [[ -n "${PREVIOUS_TAG}" ]]; then
-            CHANGELOG_URL="https://github.com/Souitou-iop/macOS-Windows-FIX/compare/${PREVIOUS_TAG}...${GITHUB_REF_NAME}"
+            CHANGELOG_URL="https://github.com/Souitou-iop/MacFocusFix/compare/${PREVIOUS_TAG}...${GITHUB_REF_NAME}"
           else
-            CHANGELOG_URL="https://github.com/Souitou-iop/macOS-Windows-FIX/commits/${GITHUB_REF_NAME}"
+            CHANGELOG_URL="https://github.com/Souitou-iop/MacFocusFix/commits/${GITHUB_REF_NAME}"
           fi
 
           cat > dist/release-notes.md <<EOF
@@ -144,6 +144,6 @@ jobs:
         if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@7c4723f7a335432393329f8f1c564994ce50185d
         with:
-          repository: Souitou-iop/macOS-Windows-FIX
+          repository: Souitou-iop/MacFocusFix
           files: dist/*.zip
           body_path: dist/release-notes.md

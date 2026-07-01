@@ -13,9 +13,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Souitou-iop/macOS-Windows-FIX/releases">Download</a> ·
-  <a href="https://github.com/Souitou-iop/macOS-Windows-FIX/actions/workflows/release.yml">Builds</a> ·
-  <a href="https://github.com/Souitou-iop/macOS-Windows-FIX/issues">Feedback</a>
+  <a href="https://github.com/Souitou-iop/MacFocusFix/releases">Download</a> ·
+  <a href="https://github.com/Souitou-iop/MacFocusFix/actions/workflows/release.yml">Builds</a> ·
+  <a href="https://github.com/Souitou-iop/MacFocusFix/issues">Feedback</a>
 </p>
 
 ## Why I Built This
@@ -40,7 +40,7 @@ MacFocusFix is the small local workaround that came out of that investigation. I
 
 ## Installation
 
-1. Download the latest zip from [Releases](https://github.com/Souitou-iop/macOS-Windows-FIX/releases).
+1. Download the latest zip from [Releases](https://github.com/Souitou-iop/MacFocusFix/releases).
 2. Unzip it.
 3. Move `MacFocusFix.app` to `/Applications`.
 4. Launch the app.

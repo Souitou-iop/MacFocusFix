@@ -19,7 +19,7 @@ private let ignoredSystemUIBundleIdentifiers: Set<String> = [
 ]
 private let userDefaultsModeKey = "focusMode"
 private let userDefaultsWelcomeKey = "hasShownWelcome"
-private let projectURL = URL(string: "https://github.com/Souitou-iop/macOS-Windows-FIX")!
+private let projectURL = URL(string: "https://github.com/Souitou-iop/MacFocusFix")!
 
 private enum FocusMode: String {
     case alwaysOn

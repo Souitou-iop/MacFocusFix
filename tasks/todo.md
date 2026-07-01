@@ -77,7 +77,7 @@
 - Rewrote `README.md` as bilingual Chinese/English documentation with download, install, permission, menu, build, release, uninstall, and limitation sections.
 - Added `.github/workflows/release.yml`; tag pushes matching `v*` build a zipped app and publish a GitHub Release.
 - Verified local packaging with `./script/build_app.sh`, `ditto` zip creation, and `unzip -tq`.
-- Created public repository `Souitou-iop/macOS-Windows-FIX`, pushed `main`, pushed tag `v0.1.0`, and verified release asset `MacFocusFix-0.1.0-macOS.zip`.
+- Created public repository `Souitou-iop/MacFocusFix`, pushed `main`, pushed tag `v0.1.0`, and verified release asset `MacFocusFix-0.1.0-macOS.zip`.
 
 ## README Language Switch And Icon Polish Plan
 

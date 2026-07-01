@@ -221,3 +221,30 @@
 - Added a narrow guard before AX focus changes and `NSRunningApplication.activate()` so clicks inside the already-frontmost application are not touched by MacFocusFix.
 - This keeps the workaround focused on cross-app/background-app activation and avoids interfering with Edge toolbar buttons such as extensions, history, and favorites.
 - Verified `swift build`, `./script/build_app.sh`, and separate arm64/x86_64 release packaging.
+
+## Public Readiness Improvements Plan
+
+- [x] Make Always On the default focus mode and keep Remote Apps Only as a menu-selectable mode.
+- [x] Limit event tapping to left mouse down by default.
+- [x] Add a one-time first-launch explanation and Accessibility shortcut.
+- [x] Add menu items for mode selection, GitHub help, and app version.
+- [x] Expand known remote-control app detection.
+- [x] Add CI and pin GitHub Actions to commit SHAs.
+- [x] Update English and Chinese README troubleshooting.
+
+## Public Readiness Improvements Review
+
+- Default behavior now applies the focus fix without requiring UU Remote to be running, while Remote Apps Only can still detect common remote-control tools.
+- Right-click and middle-click events are no longer handled, reducing interference with context menus and auxiliary mouse actions.
+- Added localized first-launch guidance, version display, mode status, GitHub link, CI checks, and updated release documentation.
+
+## Click Diagnostics Plan
+
+- [x] Add a hidden `--debug-clicks` mode for troubleshooting click compatibility bugs.
+- [x] Log target app, bundle id, pid, Accessibility role metadata, window metadata, mode, and skip/activation decision.
+- [x] Add a build/run script shortcut and README usage docs.
+
+## Click Diagnostics Review
+
+- Click diagnostics use the existing `win.ebato.MacFocusFix` logging subsystem and stay disabled for normal users.
+- `./script/build_and_run.sh --debug-clicks` launches the app and streams diagnostics for reproducing a bad click once.

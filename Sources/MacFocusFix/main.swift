@@ -17,6 +17,35 @@ private let ignoredSystemUIBundleIdentifiers: Set<String> = [
     "com.apple.siri.launcher",
     "com.apple.screenshot.launcher"
 ]
+private let userDefaultsModeKey = "focusMode"
+private let userDefaultsWelcomeKey = "hasShownWelcome"
+private let projectURL = URL(string: "https://github.com/Souitou-iop/macOS-Windows-FIX")!
+
+private enum FocusMode: String {
+    case alwaysOn
+    case remoteAppsOnly
+
+    var title: String {
+        switch self {
+        case .alwaysOn:
+            return L10n.tr("mode.alwaysOn")
+        case .remoteAppsOnly:
+            return L10n.tr("mode.remoteAppsOnly")
+        }
+    }
+
+    static func stored() -> FocusMode {
+        guard let rawValue = UserDefaults.standard.string(forKey: userDefaultsModeKey),
+              let mode = FocusMode(rawValue: rawValue) else {
+            return .alwaysOn
+        }
+        return mode
+    }
+
+    func store() {
+        UserDefaults.standard.set(rawValue, forKey: userDefaultsModeKey)
+    }
+}
 
 private enum AppResources {
     private static let bundleName = "MacFocusFix_MacFocusFix.bundle"
@@ -106,8 +135,9 @@ private enum L10n {
 }
 
 private struct Options {
-    var requireUURemote = true
+    var focusMode = FocusMode.stored()
     var activationDelay: TimeInterval = 0.06
+    var debugClicks = false
 }
 
 private enum FocusState {
@@ -141,6 +171,10 @@ private final class FocusController {
 
     init(options: Options) {
         self.options = options
+    }
+
+    var focusMode: FocusMode {
+        options.focusMode
     }
 
     var isEnabled: Bool {
@@ -181,6 +215,16 @@ private final class FocusController {
         suppressedUntil = Date().addingTimeInterval(interval)
     }
 
+    func setFocusMode(_ mode: FocusMode) {
+        guard options.focusMode != mode else { return }
+        options.focusMode = mode
+        mode.store()
+        if state == .active {
+            printStatus()
+        }
+        onStateChanged?()
+    }
+
     private func schedulePermissionTimer() {
         guard permissionTimer == nil else { return }
 
@@ -199,10 +243,7 @@ private final class FocusController {
             return true
         }
 
-        let mask =
-            (1 << CGEventType.leftMouseDown.rawValue) |
-            (1 << CGEventType.rightMouseDown.rawValue) |
-            (1 << CGEventType.otherMouseDown.rawValue)
+        let mask = 1 << CGEventType.leftMouseDown.rawValue
 
         let callback: CGEventTapCallBack = { _, type, event, refcon in
             guard let refcon else { return Unmanaged.passUnretained(event) }
@@ -236,8 +277,7 @@ private final class FocusController {
 
     private func printStatus() {
         print(L10n.tr("console.running"))
-        let mode = options.requireUURemote ? L10n.tr("mode.uuRemoteOnly") : L10n.tr("mode.alwaysOn")
-        print(String(format: L10n.tr("console.mode"), mode))
+        print(String(format: L10n.tr("console.mode"), options.focusMode.title))
         logger.info("MacFocusFix event tap is active")
     }
 
@@ -258,13 +298,30 @@ private final class FocusController {
     }
 
     private func handleMouseDown(type: CGEventType, event: CGEvent) {
-        guard Date() >= suppressedUntil else { return }
-        guard Date().timeIntervalSince(lastActivation) >= minimumActivationInterval else { return }
-        guard !options.requireUURemote || UURemoteDetector.isRunning() else { return }
-
         let location = event.location
-        guard !isMenuBarLocation(location) else { return }
-        guard !isIgnoredSystemUI(at: location) else { return }
+        guard Date() >= suppressedUntil else {
+            logClick(at: location, skipReason: "suppressed")
+            return
+        }
+        guard Date().timeIntervalSince(lastActivation) >= minimumActivationInterval else {
+            logClick(at: location, skipReason: "minimumActivationInterval")
+            return
+        }
+        guard options.focusMode == .alwaysOn || RemoteAppDetector.isRunning() else {
+            logClick(at: location, skipReason: "noRemoteAppRunning")
+            return
+        }
+
+        guard !isMenuBarLocation(location) else {
+            logClick(at: location, skipReason: "menuBarLocation")
+            return
+        }
+        guard !isIgnoredSystemUI(at: location) else {
+            logClick(at: location, skipReason: "systemUI")
+            return
+        }
+
+        logClick(at: location, skipReason: nil)
 
         DispatchQueue.main.asyncAfter(deadline: .now() + options.activationDelay) { [weak self] in
             self?.activateElement(at: location)
@@ -293,11 +350,26 @@ private final class FocusController {
     }
 
     private func activateElement(at location: CGPoint) {
-        guard Date() >= suppressedUntil else { return }
-        guard !isMenuBarLocation(location) else { return }
-        guard let (element, pid) = elementAndProcessIdentifier(at: location), pid != getpid() else { return }
-        guard !isSystemUIProcess(pid: pid) else { return }
-        guard NSWorkspace.shared.frontmostApplication?.processIdentifier != pid else { return }
+        guard Date() >= suppressedUntil else {
+            logClick(at: location, skipReason: "suppressedBeforeActivation")
+            return
+        }
+        guard !isMenuBarLocation(location) else {
+            logClick(at: location, skipReason: "menuBarBeforeActivation")
+            return
+        }
+        guard let (element, pid) = elementAndProcessIdentifier(at: location), pid != getpid() else {
+            logClick(at: location, skipReason: "missingElementOrSelf")
+            return
+        }
+        guard !isSystemUIProcess(pid: pid) else {
+            logClick(at: location, element: element, pid: pid, skipReason: "systemUIBeforeActivation")
+            return
+        }
+        guard NSWorkspace.shared.frontmostApplication?.processIdentifier != pid else {
+            logClick(at: location, element: element, pid: pid, skipReason: "frontmostApp")
+            return
+        }
 
         let appElement = AXUIElementCreateApplication(pid)
         let window = focusedWindowCandidate(from: element)
@@ -311,8 +383,59 @@ private final class FocusController {
         guard let app = NSRunningApplication(processIdentifier: pid) else { return }
         app.activate()
         lastActivation = Date()
+        logClick(at: location, element: element, pid: pid, skipReason: nil, didActivate: true)
         logger.info("Activated pid \(pid, privacy: .public) at x=\(location.x, privacy: .public) y=\(location.y, privacy: .public)")
 
+    }
+
+    private func logClick(
+        at location: CGPoint,
+        element providedElement: AXUIElement? = nil,
+        pid providedPid: pid_t? = nil,
+        skipReason: String?,
+        didActivate: Bool = false
+    ) {
+        guard options.debugClicks else { return }
+
+        let elementAndPid: (element: AXUIElement, pid: pid_t)?
+        if let providedElement, let providedPid {
+            elementAndPid = (providedElement, providedPid)
+        } else {
+            elementAndPid = elementAndProcessIdentifier(at: location)
+        }
+
+        guard let elementAndPid else {
+            let reason = skipReason ?? "missingElement"
+            logger.info("click debug x=\(location.x, privacy: .public) y=\(location.y, privacy: .public) target=none mode=\(self.options.focusMode.title, privacy: .public) willActivate=false didActivate=false skipReason=\(reason, privacy: .public)")
+            return
+        }
+
+        let element = elementAndPid.element
+        let pid = elementAndPid.pid
+        let app = NSRunningApplication(processIdentifier: pid)
+        let bundleIdentifier = app?.bundleIdentifier ?? "unknown"
+        let appName = app?.localizedName ?? "unknown"
+        let window = focusedWindowCandidate(from: element)
+        let willActivate = skipReason == nil && !didActivate
+        let role = axString(element, kAXRoleAttribute)
+        let subrole = axString(element, kAXSubroleAttribute)
+        let title = axString(element, kAXTitleAttribute)
+        let description = axString(element, kAXDescriptionAttribute)
+        let windowRole = axString(window, kAXRoleAttribute)
+        let windowTitle = axString(window, kAXTitleAttribute)
+        let isFrontmost = NSWorkspace.shared.frontmostApplication?.processIdentifier == pid
+        let reason = skipReason ?? "none"
+
+        logger.info("click debug x=\(location.x, privacy: .public) y=\(location.y, privacy: .public) pid=\(pid, privacy: .public) app=\(appName, privacy: .public) bundle=\(bundleIdentifier, privacy: .public) role=\(role, privacy: .public) subrole=\(subrole, privacy: .public) title=\(title, privacy: .public) description=\(description, privacy: .public) windowRole=\(windowRole, privacy: .public) windowTitle=\(windowTitle, privacy: .public) frontmost=\(isFrontmost, privacy: .public) mode=\(self.options.focusMode.title, privacy: .public) willActivate=\(willActivate, privacy: .public) didActivate=\(didActivate, privacy: .public) skipReason=\(reason, privacy: .public)")
+    }
+
+    private func axString(_ element: AXUIElement?, _ attribute: String) -> String {
+        guard let element else { return "none" }
+        var rawValue: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, attribute as CFString, &rawValue) == .success else {
+            return "none"
+        }
+        return (rawValue as? String) ?? String(describing: rawValue)
     }
 
     private func isIgnoredSystemUI(at location: CGPoint) -> Bool {
@@ -386,11 +509,35 @@ private final class FocusController {
 
 }
 
-private enum UURemoteDetector {
+private enum RemoteAppDetector {
+    private static let bundleIdentifierPrefixes = [
+        "com.netease.uuremote",
+        "com.todesk",
+        "com.youqu.sunlogin",
+        "com.oray.sunlogin",
+        "com.rustdesk",
+        "com.philandro.anydesk",
+        "com.google.chrome.remote"
+    ]
+
+    private static let processNameFragments = [
+        "uuremote",
+        "todesk",
+        "sunlogin",
+        "rustdesk",
+        "anydesk",
+        "chrome remote desktop"
+    ]
+
     static func isRunning() -> Bool {
         NSWorkspace.shared.runningApplications.contains { app in
-            guard let bundleIdentifier = app.bundleIdentifier else { return false }
-            return bundleIdentifier.hasPrefix("com.netease.uuremote")
+            if let bundleIdentifier = app.bundleIdentifier?.lowercased(),
+               bundleIdentifierPrefixes.contains(where: { bundleIdentifier.hasPrefix($0) }) {
+                return true
+            }
+
+            let processName = app.localizedName?.lowercased() ?? ""
+            return processNameFragments.contains { processName.contains($0) }
         }
     }
 }
@@ -401,6 +548,10 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
     private let menu = NSMenu()
     private let statusMenuItem = NSMenuItem()
     private let toggleMenuItem = NSMenuItem()
+    private let modeMenuItem = NSMenuItem()
+    private let alwaysOnMenuItem = NSMenuItem()
+    private let remoteAppsOnlyMenuItem = NSMenuItem()
+    private let versionMenuItem = NSMenuItem()
     private let launchAtLoginMenuItem = NSMenuItem()
 
     init(focusController: FocusController) {
@@ -437,6 +588,17 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
         toggleMenuItem.action = #selector(toggleFocusFix)
         menu.addItem(toggleMenuItem)
 
+        modeMenuItem.isEnabled = false
+        menu.addItem(modeMenuItem)
+
+        alwaysOnMenuItem.target = self
+        alwaysOnMenuItem.action = #selector(selectAlwaysOnMode)
+        menu.addItem(alwaysOnMenuItem)
+
+        remoteAppsOnlyMenuItem.target = self
+        remoteAppsOnlyMenuItem.action = #selector(selectRemoteAppsOnlyMode)
+        menu.addItem(remoteAppsOnlyMenuItem)
+
         let accessibilityItem = NSMenuItem(title: L10n.tr("menu.openAccessibilitySettings"), action: #selector(openAccessibilitySettings), keyEquivalent: "")
         accessibilityItem.target = self
         menu.addItem(accessibilityItem)
@@ -446,6 +608,13 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
         menu.addItem(launchAtLoginMenuItem)
 
         menu.addItem(.separator())
+
+        let helpItem = NSMenuItem(title: L10n.tr("menu.openGitHub"), action: #selector(openGitHub), keyEquivalent: "")
+        helpItem.target = self
+        menu.addItem(helpItem)
+
+        versionMenuItem.isEnabled = false
+        menu.addItem(versionMenuItem)
 
         let quitItem = NSMenuItem(title: L10n.tr("menu.quit"), action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
@@ -466,13 +635,27 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
     private func updateMenu() {
         statusMenuItem.title = String(format: L10n.tr("menu.statusFormat"), focusController.state.title)
         toggleMenuItem.title = focusController.isEnabled ? L10n.tr("menu.disableFocusFix") : L10n.tr("menu.enableFocusFix")
+        updateFocusModeMenuItems()
         updateLaunchAtLoginMenuItem()
+        versionMenuItem.title = String(format: L10n.tr("menu.versionFormat"), appVersion())
 
         guard let button = statusItem.button else { return }
         button.image = statusImage(active: focusController.state == .active, appearance: button.effectiveAppearance)
         button.title = button.image == nil ? "FF" : ""
         button.contentTintColor = nil
         button.needsDisplay = true
+    }
+
+    private func updateFocusModeMenuItems() {
+        modeMenuItem.title = String(format: L10n.tr("menu.modeFormat"), focusController.focusMode.title)
+        alwaysOnMenuItem.title = L10n.tr("menu.modeAlwaysOn")
+        alwaysOnMenuItem.state = focusController.focusMode == .alwaysOn ? .on : .off
+        remoteAppsOnlyMenuItem.title = L10n.tr("menu.modeRemoteAppsOnly")
+        remoteAppsOnlyMenuItem.state = focusController.focusMode == .remoteAppsOnly ? .on : .off
+    }
+
+    private func appVersion() -> String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.0.0-dev"
     }
 
     private func statusImage(active: Bool, appearance: NSAppearance) -> NSImage? {
@@ -538,6 +721,16 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
         }
     }
 
+    @objc private func selectAlwaysOnMode() {
+        focusController.setFocusMode(.alwaysOn)
+        updateMenu()
+    }
+
+    @objc private func selectRemoteAppsOnlyMode() {
+        focusController.setFocusMode(.remoteAppsOnly)
+        updateMenu()
+    }
+
     @objc private func toggleLaunchAtLogin() {
         do {
             switch SMAppService.mainApp.status {
@@ -571,6 +764,10 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
         }
     }
 
+    @objc private func openGitHub() {
+        NSWorkspace.shared.open(projectURL)
+    }
+
     @objc private func quit() {
         NSApp.terminate(nil)
     }
@@ -587,11 +784,29 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         menuBarController = MenuBarController(focusController: focusController)
-        focusController.start(prompt: true)
+        showWelcomeIfNeeded()
+        focusController.start(prompt: false)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         focusController.stop()
+    }
+
+    private func showWelcomeIfNeeded() {
+        guard !UserDefaults.standard.bool(forKey: userDefaultsWelcomeKey) else { return }
+        UserDefaults.standard.set(true, forKey: userDefaultsWelcomeKey)
+
+        let alert = NSAlert()
+        alert.messageText = L10n.tr("welcome.title")
+        alert.informativeText = L10n.tr("welcome.message")
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: L10n.tr("welcome.openAccessibilitySettings"))
+        alert.addButton(withTitle: L10n.tr("welcome.later"))
+
+        if alert.runModal() == .alertFirstButtonReturn,
+           let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+            NSWorkspace.shared.open(url)
+        }
     }
 }
 
@@ -601,7 +816,11 @@ private func parseOptions() -> Options {
     for argument in CommandLine.arguments.dropFirst() {
         switch argument {
         case "--always":
-            options.requireUURemote = false
+            options.focusMode = .alwaysOn
+        case "--remote-apps-only":
+            options.focusMode = .remoteAppsOnly
+        case "--debug-clicks":
+            options.debugClicks = true
         case "--help", "-h":
             print(L10n.tr("help.usage"))
             exit(0)

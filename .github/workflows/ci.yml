@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+
+      - name: Build
+        run: swift build
+
+      - name: Validate localization files
+        run: plutil -lint Sources/MacFocusFix/Resources/*/Localizable.strings
+
+      - name: Validate workflow YAML
+        run: ruby -e 'require "yaml"; YAML.load_file(".github/workflows/release.yml"); YAML.load_file(".github/workflows/ci.yml")'
+
+      - name: Package arm64 release app
+        run: APP_ARCH=arm64 CONFIGURATION=release ./script/build_app.sh

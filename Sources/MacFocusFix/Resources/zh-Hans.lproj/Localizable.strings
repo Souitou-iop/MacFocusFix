@@ -12,15 +12,25 @@
 "console.waitingForPermission" = "MacFocusFix 正在等待辅助功能权限。";
 "console.permissionInstructions" = "请在“系统设置 > 隐私与安全性 > 辅助功能”中授权。授权后会自动启动鼠标监听。";
 
-"mode.uuRemoteOnly" = "仅在 UURemote 运行时生效";
+"mode.remoteAppsOnly" = "仅远控软件运行时";
 "mode.alwaysOn" = "始终生效";
 "menuBar.tooltip" = "MacFocusFix 焦点修复";
 "menu.statusFormat" = "状态：%@";
+"menu.modeFormat" = "模式：%@";
+"menu.modeAlwaysOn" = "始终生效";
+"menu.modeRemoteAppsOnly" = "仅远控软件运行时";
 "menu.enableFocusFix" = "开启焦点修复";
 "menu.disableFocusFix" = "关闭焦点修复";
 "menu.openAccessibilitySettings" = "打开辅助功能设置";
 "menu.launchAtLogin" = "开机启动";
 "menu.launchAtLoginRequiresApproval" = "开机启动（需要批准）";
+"menu.openGitHub" = "打开 GitHub";
+"menu.versionFormat" = "版本 %@";
 "menu.quit" = "退出 MacFocusFix";
 
-"help.usage" = "usage: MacFocusFix [--always]\n\n  --always   即使 UURemote 未运行也生效。";
+"welcome.title" = "MacFocusFix 正在菜单栏运行";
+"welcome.message" = "MacFocusFix 需要辅助功能权限，才能让键盘焦点跟随远程点击。授权后，可以通过菜单栏图标开启、关闭或切换模式。";
+"welcome.openAccessibilitySettings" = "打开辅助功能设置";
+"welcome.later" = "稍后";
+
+"help.usage" = "usage: MacFocusFix [--always] [--remote-apps-only] [--debug-clicks]\n\n  --always             始终运行焦点修复，这是默认模式。\n  --remote-apps-only   仅在检测到已知远控软件运行时生效。\n  --debug-clicks       输出点击诊断日志，用于排查兼容问题。";

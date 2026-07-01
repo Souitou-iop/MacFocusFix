@@ -12,15 +12,25 @@
 "console.waitingForPermission" = "MacFocusFix is waiting for Accessibility permission.";
 "console.permissionInstructions" = "Grant it in System Settings > Privacy & Security > Accessibility. It will start automatically after permission is granted.";
 
-"mode.uuRemoteOnly" = "only while UURemote is running";
-"mode.alwaysOn" = "always on";
+"mode.remoteAppsOnly" = "Remote Apps Only";
+"mode.alwaysOn" = "Always On";
 "menuBar.tooltip" = "MacFocusFix Focus Fix";
 "menu.statusFormat" = "Status: %@";
+"menu.modeFormat" = "Mode: %@";
+"menu.modeAlwaysOn" = "Always On";
+"menu.modeRemoteAppsOnly" = "Remote Apps Only";
 "menu.enableFocusFix" = "Enable Focus Fix";
 "menu.disableFocusFix" = "Disable Focus Fix";
 "menu.openAccessibilitySettings" = "Open Accessibility Settings";
 "menu.launchAtLogin" = "Launch at Login";
 "menu.launchAtLoginRequiresApproval" = "Launch at Login (Needs Approval)";
+"menu.openGitHub" = "Open GitHub";
+"menu.versionFormat" = "Version %@";
 "menu.quit" = "Quit MacFocusFix";
 
-"help.usage" = "usage: MacFocusFix [--always]\n\n  --always   Run even when UURemote is not running.";
+"welcome.title" = "MacFocusFix is running in the menu bar";
+"welcome.message" = "MacFocusFix needs Accessibility permission to keep keyboard focus following remote-control clicks. After granting permission, use the menu bar icon to enable, disable, or change its mode.";
+"welcome.openAccessibilitySettings" = "Open Accessibility Settings";
+"welcome.later" = "Later";
+
+"help.usage" = "usage: MacFocusFix [--always] [--remote-apps-only] [--debug-clicks]\n\n  --always             Always run the focus fix. This is the default.\n  --remote-apps-only   Run only while a known remote-control app is open.\n  --debug-clicks       Log click diagnostics for troubleshooting.";

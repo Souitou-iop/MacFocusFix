@@ -26,6 +26,13 @@ case "$MODE" in
   --always|always)
     open_app --always
     ;;
+  --remote-apps-only|remote-apps-only)
+    open_app --remote-apps-only
+    ;;
+  --debug-clicks|debug-clicks)
+    open_app --debug-clicks
+    /usr/bin/log stream --info --style compact --predicate "subsystem == \"$BUNDLE_ID\""
+    ;;
   --debug|debug)
     lldb -- "$APP_BINARY"
     ;;
@@ -43,7 +50,7 @@ case "$MODE" in
     pgrep -x "$APP_NAME" >/dev/null
     ;;
   *)
-    echo "usage: $0 [run|--always|--debug|--logs|--telemetry|--verify]" >&2
+    echo "usage: $0 [run|--always|--remote-apps-only|--debug-clicks|--debug|--logs|--telemetry|--verify]" >&2
     exit 2
     ;;
 esac

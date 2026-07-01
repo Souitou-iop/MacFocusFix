@@ -32,6 +32,8 @@ MacFocusFix is the small local workaround that came out of that investigation. I
 
 - Menu bar only: no Dock icon.
 - Enable or disable the focus fix from the menu bar.
+- Always On by default, with an optional Remote Apps Only mode for common remote-control tools such as UU Remote, ToDesk, Sunlogin, RustDesk, AnyDesk, and Chrome Remote Desktop.
+- Handles left-click activation only, so right-click menus and middle-click actions are left alone.
 - Optional Launch at Login toggle from the menu bar.
 - Ignores the macOS menu bar and known system UI processes, so Control Center, Wi-Fi, input method controls, Notification Center, Spotlight, Siri, and Screenshot keep working normally.
 - Uses the bundled app icon from the Icon Composer export and a separate template-style menu bar icon.
@@ -50,7 +52,11 @@ Official tagged releases are currently built with ad hoc signing. If you build t
 
 - Status: shows whether the helper is on, off, or waiting for Accessibility permission.
 - Enable / Disable Focus Fix: installs or removes the mouse event listener.
+- Mode: switches between Always On and Remote Apps Only.
 - Open Accessibility Settings
+- Launch at Login
+- Open GitHub
+- Version: useful when reporting bugs.
 - Quit MacFocusFix
 
 ## Build Locally
@@ -63,11 +69,31 @@ Official tagged releases are currently built with ad hoc signing. If you build t
 `build_app.sh` creates `dist/MacFocusFix.app` and signs it ad hoc for local use.
 `build_and_run.sh` builds the app and opens it.
 
+## Troubleshooting
+
+- If macOS says the app cannot be opened, open System Settings > Privacy & Security and choose Open Anyway for MacFocusFix. This can happen because current public releases are ad hoc signed.
+- If you cannot find the app after launching it, look for the MacFocusFix icon in the menu bar. The app intentionally has no Dock icon.
+- If the focus fix does not work, open the menu bar item and choose Open Accessibility Settings, then make sure MacFocusFix is enabled under Accessibility. Quit and relaunch the app after changing permission.
+- If an update asks for Accessibility permission again, it is usually because ad hoc signing does not provide a stable Developer ID identity. A Developer ID signed and notarized build is needed to make updates smoother.
+- Choose the `arm64` download for Apple Silicon Macs and `x86_64` for Intel Macs. The release assets are intentionally split to keep file size down.
+
+## Troubleshooting Logs
+
+For click compatibility bugs, run MacFocusFix with click diagnostics enabled:
+
+```zsh
+./script/build_and_run.sh --debug-clicks
+```
+
+Then reproduce the bad click once. The log includes the clicked app, bundle identifier, process id, Accessibility role/subrole/title/description, window title, current mode, and whether MacFocusFix skipped or activated the target.
+
 ## Releases
 
 GitHub Actions builds release artifacts on macOS. Pushing a tag such as `v0.1.0` publishes a zipped `.app` bundle as a GitHub Release asset. When Developer ID signing secrets are available, the workflow can sign and notarize the app; otherwise it falls back to ad hoc signing.
 
 This matters for Accessibility permission. macOS tracks trusted apps by code identity, not just by app name. Ad hoc builds can look like a different app after every rebuild, which may require granting Accessibility permission again. A stable Developer ID signature keeps the identity consistent across updates.
+
+Release and CI workflows pin third-party GitHub Actions to commit SHAs instead of floating major-version tags. This keeps the build pipeline from changing unexpectedly when an upstream action tag moves or receives new code.
 
 The release workflow expects these repository secrets:
 

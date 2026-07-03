@@ -21,6 +21,7 @@ private let userDefaultsModeKey = "focusMode"
 private let userDefaultsWelcomeKey = "hasShownWelcome"
 private let userDefaultsLanguageKey = "appLanguage"
 private let projectURL = URL(string: "https://github.com/Souitou-iop/MacFocusFix")!
+private let appDefaults = UserDefaults(suiteName: bundleID) ?? .standard
 
 private enum AppLanguage: String {
     case system
@@ -50,7 +51,7 @@ private enum AppLanguage: String {
     }
 
     static func stored() -> AppLanguage {
-        guard let rawValue = UserDefaults.standard.string(forKey: userDefaultsLanguageKey),
+        guard let rawValue = appDefaults.string(forKey: userDefaultsLanguageKey),
               let language = AppLanguage(rawValue: rawValue) else {
             return .system
         }
@@ -58,8 +59,8 @@ private enum AppLanguage: String {
     }
 
     func store() {
-        UserDefaults.standard.set(rawValue, forKey: userDefaultsLanguageKey)
-        UserDefaults.standard.synchronize()
+        appDefaults.set(rawValue, forKey: userDefaultsLanguageKey)
+        appDefaults.synchronize()
     }
 }
 
@@ -77,7 +78,7 @@ private enum FocusMode: String {
     }
 
     static func stored() -> FocusMode {
-        guard let rawValue = UserDefaults.standard.string(forKey: userDefaultsModeKey),
+        guard let rawValue = appDefaults.string(forKey: userDefaultsModeKey),
               let mode = FocusMode(rawValue: rawValue) else {
             return .alwaysOn
         }
@@ -85,7 +86,8 @@ private enum FocusMode: String {
     }
 
     func store() {
-        UserDefaults.standard.set(rawValue, forKey: userDefaultsModeKey)
+        appDefaults.set(rawValue, forKey: userDefaultsModeKey)
+        appDefaults.synchronize()
     }
 }
 
@@ -130,6 +132,8 @@ private enum AppResources {
 }
 
 private enum L10n {
+    private static let supportedLocalizations = ["zh-Hans", "en"]
+
     private static let bundle: Bundle = {
         let localization = AppLanguage.stored().localization ?? preferredLocalization()
 
@@ -142,17 +146,33 @@ private enum L10n {
     }()
 
     private static func preferredLocalization() -> String {
-        for language in preferredLanguages() {
-            let normalized = language.lowercased()
-            if normalized.hasPrefix("en") {
-                return "en"
-            }
-            if normalized.hasPrefix("zh") {
-                return "zh-Hans"
-            }
+        let mappedLanguages = preferredLanguages().map(mapLanguageIdentifier)
+        let preferred = Bundle.preferredLocalizations(
+            from: supportedLocalizations,
+            forPreferences: mappedLanguages
+        )
+
+        if let localization = preferred.first {
+            return localization
         }
 
         return "en"
+    }
+
+    private static func mapLanguageIdentifier(_ language: String) -> String {
+        let normalized = language
+            .replacingOccurrences(of: "_", with: "-")
+            .lowercased()
+
+        if normalized == "zh" || normalized.hasPrefix("zh-") {
+            return "zh-Hans"
+        }
+
+        if normalized == "en" || normalized.hasPrefix("en-") {
+            return "en"
+        }
+
+        return language
     }
 
     private static func preferredLanguages() -> [String] {
@@ -923,8 +943,9 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func showWelcomeIfNeeded() {
-        guard !UserDefaults.standard.bool(forKey: userDefaultsWelcomeKey) else { return }
-        UserDefaults.standard.set(true, forKey: userDefaultsWelcomeKey)
+        guard !appDefaults.bool(forKey: userDefaultsWelcomeKey) else { return }
+        appDefaults.set(true, forKey: userDefaultsWelcomeKey)
+        appDefaults.synchronize()
 
         let alert = NSAlert()
         alert.messageText = L10n.tr("welcome.title")

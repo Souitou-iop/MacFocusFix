@@ -259,3 +259,16 @@
 
 - The app still follows system language by default, but users can override the language from the menu bar.
 - Language changes are stored in `UserDefaults` and take effect after restarting MacFocusFix.
+
+## System Language Detection Fix Plan
+
+- [x] Use Bundle preferred localization matching for System language mode.
+- [x] Map Chinese language identifiers such as `zh`, `zh-CN`, and `zh-Hans-CN` to Simplified Chinese.
+- [x] Add app bundle localization declarations to generated `Info.plist`.
+- [x] Verify System and manual override language behavior.
+
+## System Language Detection Fix Review
+
+- System language mode now chooses from `zh-Hans` and `en` using macOS preferred localization matching, with Chinese fallback mapping before English fallback.
+- App preferences use the fixed `win.ebato.MacFocusFix` defaults suite so CLI, packaged app, and menu changes read the same language override.
+- Packaged apps now declare `CFBundleDevelopmentRegion=en` and `CFBundleLocalizations=[en, zh-Hans]`.

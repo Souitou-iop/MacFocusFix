@@ -42,7 +42,7 @@
 
 "language.restartTitle" = "Restart required";
 "language.restartMessage" = "Restart MacFocusFix to apply the selected language.";
-"language.restartNow" = "Quit Now";
+"language.restartNow" = "Restart";
 "language.later" = "Later";
 
 "help.usage" = "usage: MacFocusFix [--always] [--remote-apps-only] [--debug-clicks]\n\n  --always             Always run the focus fix. This is the default.\n  --remote-apps-only   Run only while a known remote-control app is open.\n  --debug-clicks       Log click diagnostics for troubleshooting.";

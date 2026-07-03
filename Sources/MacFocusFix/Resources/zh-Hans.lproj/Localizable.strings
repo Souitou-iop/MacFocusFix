@@ -42,7 +42,7 @@
 
 "language.restartTitle" = "需要重启";
 "language.restartMessage" = "重启 MacFocusFix 后会应用所选语言。";
-"language.restartNow" = "现在退出";
+"language.restartNow" = "重启";
 "language.later" = "稍后";
 
 "help.usage" = "usage: MacFocusFix [--always] [--remote-apps-only] [--debug-clicks]\n\n  --always             始终运行焦点修复，这是默认模式。\n  --remote-apps-only   仅在检测到已知远控软件运行时生效。\n  --debug-clicks       输出点击诊断日志，用于排查兼容问题。";

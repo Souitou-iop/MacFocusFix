@@ -53,7 +53,7 @@ Official tagged releases are currently built with ad hoc signing. If you build t
 - Status: shows whether the helper is on, off, or waiting for Accessibility permission.
 - Enable / Disable Focus Fix: installs or removes the mouse event listener.
 - Mode: switches between Always On and Remote Apps Only.
-- Language: switches between System, English, and Simplified Chinese. Restart MacFocusFix after changing this setting.
+- Language: switches between System, English, and Simplified Chinese. Use the Restart prompt after changing this setting.
 - Open Accessibility Settings
 - Launch at Login
 - Open GitHub

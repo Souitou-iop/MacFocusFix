@@ -59,6 +59,7 @@ private enum AppLanguage: String {
 
     func store() {
         UserDefaults.standard.set(rawValue, forKey: userDefaultsLanguageKey)
+        UserDefaults.standard.synchronize()
     }
 }
 
@@ -872,6 +873,17 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
         alert.addButton(withTitle: L10n.tr("language.later", language: language))
 
         if alert.runModal() == .alertFirstButtonReturn {
+            restartApp()
+        }
+    }
+
+    private func restartApp() {
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.createsNewApplicationInstance = true
+        NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: configuration) { _, error in
+            if let error {
+                logger.error("Could not restart MacFocusFix: \(error.localizedDescription, privacy: .public)")
+            }
             NSApp.terminate(nil)
         }
     }

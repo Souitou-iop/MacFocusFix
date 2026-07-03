@@ -248,3 +248,14 @@
 
 - Click diagnostics use the existing `win.ebato.MacFocusFix` logging subsystem and stay disabled for normal users.
 - `./script/build_and_run.sh --debug-clicks` launches the app and streams diagnostics for reproducing a bad click once.
+
+## Language Selection Plan
+
+- [x] Add a persistent language preference with System, English, and Simplified Chinese options.
+- [x] Add language menu items and a restart prompt after changing language.
+- [x] Document language selection in English and Chinese README troubleshooting.
+
+## Language Selection Review
+
+- The app still follows system language by default, but users can override the language from the menu bar.
+- Language changes are stored in `UserDefaults` and take effect after restarting MacFocusFix.

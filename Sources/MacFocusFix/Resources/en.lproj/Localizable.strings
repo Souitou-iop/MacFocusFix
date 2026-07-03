@@ -14,11 +14,18 @@
 
 "mode.remoteAppsOnly" = "Remote Apps Only";
 "mode.alwaysOn" = "Always On";
+"language.system" = "System";
+"language.english" = "English";
+"language.simplifiedChinese" = "Simplified Chinese";
 "menuBar.tooltip" = "MacFocusFix Focus Fix";
 "menu.statusFormat" = "Status: %@";
 "menu.modeFormat" = "Mode: %@";
 "menu.modeAlwaysOn" = "Always On";
 "menu.modeRemoteAppsOnly" = "Remote Apps Only";
+"menu.languageFormat" = "Language: %@";
+"menu.languageSystem" = "System";
+"menu.languageEnglish" = "English";
+"menu.languageSimplifiedChinese" = "Simplified Chinese";
 "menu.enableFocusFix" = "Enable Focus Fix";
 "menu.disableFocusFix" = "Disable Focus Fix";
 "menu.openAccessibilitySettings" = "Open Accessibility Settings";
@@ -32,5 +39,10 @@
 "welcome.message" = "MacFocusFix needs Accessibility permission to keep keyboard focus following remote-control clicks. After granting permission, use the menu bar icon to enable, disable, or change its mode.";
 "welcome.openAccessibilitySettings" = "Open Accessibility Settings";
 "welcome.later" = "Later";
+
+"language.restartTitle" = "Restart required";
+"language.restartMessage" = "Restart MacFocusFix to apply the selected language.";
+"language.restartNow" = "Quit Now";
+"language.later" = "Later";
 
 "help.usage" = "usage: MacFocusFix [--always] [--remote-apps-only] [--debug-clicks]\n\n  --always             Always run the focus fix. This is the default.\n  --remote-apps-only   Run only while a known remote-control app is open.\n  --debug-clicks       Log click diagnostics for troubleshooting.";

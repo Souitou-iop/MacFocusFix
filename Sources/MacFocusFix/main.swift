@@ -19,7 +19,48 @@ private let ignoredSystemUIBundleIdentifiers: Set<String> = [
 ]
 private let userDefaultsModeKey = "focusMode"
 private let userDefaultsWelcomeKey = "hasShownWelcome"
+private let userDefaultsLanguageKey = "appLanguage"
 private let projectURL = URL(string: "https://github.com/Souitou-iop/MacFocusFix")!
+
+private enum AppLanguage: String {
+    case system
+    case english
+    case simplifiedChinese
+
+    var localization: String? {
+        switch self {
+        case .system:
+            return nil
+        case .english:
+            return "en"
+        case .simplifiedChinese:
+            return "zh-Hans"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .system:
+            return L10n.tr("language.system")
+        case .english:
+            return L10n.tr("language.english")
+        case .simplifiedChinese:
+            return L10n.tr("language.simplifiedChinese")
+        }
+    }
+
+    static func stored() -> AppLanguage {
+        guard let rawValue = UserDefaults.standard.string(forKey: userDefaultsLanguageKey),
+              let language = AppLanguage(rawValue: rawValue) else {
+            return .system
+        }
+        return language
+    }
+
+    func store() {
+        UserDefaults.standard.set(rawValue, forKey: userDefaultsLanguageKey)
+    }
+}
 
 private enum FocusMode: String {
     case alwaysOn
@@ -89,7 +130,7 @@ private enum AppResources {
 
 private enum L10n {
     private static let bundle: Bundle = {
-        let localization = preferredLocalization()
+        let localization = AppLanguage.stored().localization ?? preferredLocalization()
 
         guard let path = AppResources.bundle.path(forResource: localization, ofType: "lproj"),
               let bundle = Bundle(path: path) else {
@@ -131,6 +172,16 @@ private enum L10n {
 
     static func tr(_ key: String) -> String {
         NSLocalizedString(key, bundle: bundle, value: key, comment: "")
+    }
+
+    static func tr(_ key: String, language: AppLanguage) -> String {
+        guard let localization = language.localization,
+              let path = AppResources.bundle.path(forResource: localization, ofType: "lproj"),
+              let bundle = Bundle(path: path) else {
+            return tr(key)
+        }
+
+        return NSLocalizedString(key, bundle: bundle, value: key, comment: "")
     }
 }
 
@@ -551,6 +602,10 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
     private let modeMenuItem = NSMenuItem()
     private let alwaysOnMenuItem = NSMenuItem()
     private let remoteAppsOnlyMenuItem = NSMenuItem()
+    private let languageMenuItem = NSMenuItem()
+    private let systemLanguageMenuItem = NSMenuItem()
+    private let englishLanguageMenuItem = NSMenuItem()
+    private let simplifiedChineseLanguageMenuItem = NSMenuItem()
     private let versionMenuItem = NSMenuItem()
     private let launchAtLoginMenuItem = NSMenuItem()
 
@@ -599,6 +654,25 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
         remoteAppsOnlyMenuItem.action = #selector(selectRemoteAppsOnlyMode)
         menu.addItem(remoteAppsOnlyMenuItem)
 
+        menu.addItem(.separator())
+
+        languageMenuItem.isEnabled = false
+        menu.addItem(languageMenuItem)
+
+        systemLanguageMenuItem.target = self
+        systemLanguageMenuItem.action = #selector(selectSystemLanguage)
+        menu.addItem(systemLanguageMenuItem)
+
+        englishLanguageMenuItem.target = self
+        englishLanguageMenuItem.action = #selector(selectEnglishLanguage)
+        menu.addItem(englishLanguageMenuItem)
+
+        simplifiedChineseLanguageMenuItem.target = self
+        simplifiedChineseLanguageMenuItem.action = #selector(selectSimplifiedChineseLanguage)
+        menu.addItem(simplifiedChineseLanguageMenuItem)
+
+        menu.addItem(.separator())
+
         let accessibilityItem = NSMenuItem(title: L10n.tr("menu.openAccessibilitySettings"), action: #selector(openAccessibilitySettings), keyEquivalent: "")
         accessibilityItem.target = self
         menu.addItem(accessibilityItem)
@@ -636,6 +710,7 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
         statusMenuItem.title = String(format: L10n.tr("menu.statusFormat"), focusController.state.title)
         toggleMenuItem.title = focusController.isEnabled ? L10n.tr("menu.disableFocusFix") : L10n.tr("menu.enableFocusFix")
         updateFocusModeMenuItems()
+        updateLanguageMenuItems()
         updateLaunchAtLoginMenuItem()
         versionMenuItem.title = String(format: L10n.tr("menu.versionFormat"), appVersion())
 
@@ -652,6 +727,17 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
         alwaysOnMenuItem.state = focusController.focusMode == .alwaysOn ? .on : .off
         remoteAppsOnlyMenuItem.title = L10n.tr("menu.modeRemoteAppsOnly")
         remoteAppsOnlyMenuItem.state = focusController.focusMode == .remoteAppsOnly ? .on : .off
+    }
+
+    private func updateLanguageMenuItems() {
+        let language = AppLanguage.stored()
+        languageMenuItem.title = String(format: L10n.tr("menu.languageFormat"), language.title)
+        systemLanguageMenuItem.title = L10n.tr("menu.languageSystem")
+        systemLanguageMenuItem.state = language == .system ? .on : .off
+        englishLanguageMenuItem.title = L10n.tr("menu.languageEnglish")
+        englishLanguageMenuItem.state = language == .english ? .on : .off
+        simplifiedChineseLanguageMenuItem.title = L10n.tr("menu.languageSimplifiedChinese")
+        simplifiedChineseLanguageMenuItem.state = language == .simplifiedChinese ? .on : .off
     }
 
     private func appVersion() -> String {
@@ -731,6 +817,25 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
         updateMenu()
     }
 
+    @objc private func selectSystemLanguage() {
+        setLanguage(.system)
+    }
+
+    @objc private func selectEnglishLanguage() {
+        setLanguage(.english)
+    }
+
+    @objc private func selectSimplifiedChineseLanguage() {
+        setLanguage(.simplifiedChinese)
+    }
+
+    private func setLanguage(_ language: AppLanguage) {
+        guard AppLanguage.stored() != language else { return }
+        language.store()
+        updateLanguageMenuItems()
+        showRestartRequiredAlert(language: language)
+    }
+
     @objc private func toggleLaunchAtLogin() {
         do {
             switch SMAppService.mainApp.status {
@@ -756,6 +861,19 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
         alert.alertStyle = .warning
         alert.addButton(withTitle: L10n.tr("alert.ok"))
         alert.runModal()
+    }
+
+    private func showRestartRequiredAlert(language: AppLanguage) {
+        let alert = NSAlert()
+        alert.messageText = L10n.tr("language.restartTitle", language: language)
+        alert.informativeText = L10n.tr("language.restartMessage", language: language)
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: L10n.tr("language.restartNow", language: language))
+        alert.addButton(withTitle: L10n.tr("language.later", language: language))
+
+        if alert.runModal() == .alertFirstButtonReturn {
+            NSApp.terminate(nil)
+        }
     }
 
     @objc private func openAccessibilitySettings() {

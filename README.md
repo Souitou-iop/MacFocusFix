@@ -53,6 +53,7 @@ Official tagged releases are currently built with ad hoc signing. If you build t
 - Status: shows whether the helper is on, off, or waiting for Accessibility permission.
 - Enable / Disable Focus Fix: installs or removes the mouse event listener.
 - Mode: switches between Always On and Remote Apps Only.
+- Language: switches between System, English, and Simplified Chinese. Restart MacFocusFix after changing this setting.
 - Open Accessibility Settings
 - Launch at Login
 - Open GitHub
@@ -74,6 +75,7 @@ Official tagged releases are currently built with ad hoc signing. If you build t
 - If macOS says the app cannot be opened, open System Settings > Privacy & Security and choose Open Anyway for MacFocusFix. This can happen because current public releases are ad hoc signed.
 - If you cannot find the app after launching it, look for the MacFocusFix icon in the menu bar. The app intentionally has no Dock icon.
 - If the focus fix does not work, open the menu bar item and choose Open Accessibility Settings, then make sure MacFocusFix is enabled under Accessibility. Quit and relaunch the app after changing permission.
+- If the app opens in the wrong language, use the menu bar Language items to choose English or Simplified Chinese, then restart MacFocusFix.
 - If an update asks for Accessibility permission again, it is usually because ad hoc signing does not provide a stable Developer ID identity. A Developer ID signed and notarized build is needed to make updates smoother.
 - Choose the `arm64` download for Apple Silicon Macs and `x86_64` for Intel Macs. The release assets are intentionally split to keep file size down.
 

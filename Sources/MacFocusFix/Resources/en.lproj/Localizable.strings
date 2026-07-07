@@ -29,16 +29,27 @@
 "menu.enableFocusFix" = "Enable Focus Fix";
 "menu.disableFocusFix" = "Disable Focus Fix";
 "menu.openAccessibilitySettings" = "Open Accessibility Settings";
+"menu.openGuide" = "Open Welcome Guide";
 "menu.launchAtLogin" = "Launch at Login";
 "menu.launchAtLoginRequiresApproval" = "Launch at Login (Needs Approval)";
 "menu.openGitHub" = "Open GitHub";
 "menu.versionFormat" = "Version %@";
 "menu.quit" = "Quit MacFocusFix";
 
-"welcome.title" = "MacFocusFix is running in the menu bar";
-"welcome.message" = "MacFocusFix needs Accessibility permission to keep keyboard focus following remote-control clicks. After granting permission, use the menu bar icon to enable, disable, or change its mode.";
-"welcome.openAccessibilitySettings" = "Open Accessibility Settings";
-"welcome.later" = "Later";
+"guide.windowTitle" = "Welcome to MacFocusFix";
+"guide.page.welcome.title" = "Keep remote clicks focused";
+"guide.page.welcome.message" = "MacFocusFix keeps keyboard focus following the window you click while using remote-control apps.";
+"guide.page.permission.title" = "Grant Accessibility permission";
+"guide.page.permission.message" = "macOS requires Accessibility permission before MacFocusFix can observe clicks and focus the target window.";
+"guide.page.mode.title" = "Choose when it runs";
+"guide.page.mode.message" = "Use Always On for full-time focus repair, or Remote Apps Only to run it only while known remote-control apps are open.";
+"guide.page.menu.title" = "Control it from the menu bar";
+"guide.page.menu.message" = "MacFocusFix stays out of the Dock. Use the menu bar icon to toggle the fix, change modes, set launch at login, or reopen this guide.";
+"guide.openAccessibilitySettings" = "Open Accessibility Settings";
+"guide.pageIndicator" = "%d of %d";
+"guide.back" = "Back";
+"guide.continue" = "Continue";
+"guide.getStarted" = "Get Started";
 
 "language.restartTitle" = "Restart required";
 "language.restartMessage" = "Restart MacFocusFix to apply the selected language.";

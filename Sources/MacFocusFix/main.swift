@@ -23,6 +23,12 @@ private let userDefaultsLanguageKey = "appLanguage"
 private let projectURL = URL(string: "https://github.com/Souitou-iop/MacFocusFix")!
 private let appDefaults = UserDefaults(suiteName: bundleID) ?? .standard
 
+private func openAccessibilitySettingsPane() {
+    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+        NSWorkspace.shared.open(url)
+    }
+}
+
 private enum AppLanguage: String {
     case system
     case english
@@ -614,8 +620,326 @@ private enum RemoteAppDetector {
     }
 }
 
+private struct OnboardingPage {
+    let symbolName: String
+    let titleKey: String
+    let messageKey: String
+    let showsAccessibilityButton: Bool
+    let accentColor: NSColor
+}
+
+private final class OnboardingHeroView: NSView {
+    private let symbolImageView = NSImageView()
+    var accentColor = NSColor.controlAccentColor {
+        didSet {
+            needsDisplay = true
+        }
+    }
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+        layer?.cornerRadius = 28
+        layer?.masksToBounds = false
+
+        symbolImageView.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 70, weight: .medium)
+        symbolImageView.contentTintColor = .white
+        symbolImageView.imageScaling = .scaleProportionallyUpOrDown
+        symbolImageView.wantsLayer = true
+        symbolImageView.shadow = NSShadow()
+        symbolImageView.shadow?.shadowColor = .black.withAlphaComponent(0.18)
+        symbolImageView.shadow?.shadowBlurRadius = 14
+        symbolImageView.shadow?.shadowOffset = CGSize(width: 0, height: -2)
+        symbolImageView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(symbolImageView)
+
+        NSLayoutConstraint.activate([
+            symbolImageView.centerXAnchor.constraint(equalTo: centerXAnchor),
+            symbolImageView.centerYAnchor.constraint(equalTo: centerYAnchor),
+            symbolImageView.widthAnchor.constraint(equalToConstant: 118),
+            symbolImageView.heightAnchor.constraint(equalToConstant: 118)
+        ])
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func setSymbolName(_ symbolName: String) {
+        symbolImageView.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil)
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
+
+        let bounds = bounds.insetBy(dx: 8, dy: 8)
+        let panelPath = NSBezierPath(roundedRect: bounds, xRadius: 28, yRadius: 28)
+        let endColor = accentColor.blended(withFraction: 0.45, of: .systemPurple) ?? accentColor
+        let gradient = NSGradient(colors: [
+            accentColor.withAlphaComponent(0.92),
+            endColor.withAlphaComponent(0.72),
+            NSColor.controlBackgroundColor.withAlphaComponent(0.92)
+        ])
+        gradient?.draw(in: panelPath, angle: 135)
+
+        NSColor.white.withAlphaComponent(0.22).setStroke()
+        panelPath.lineWidth = 1
+        panelPath.stroke()
+
+        let topHighlight = NSBezierPath(roundedRect: NSRect(x: bounds.minX + 28, y: bounds.maxY - 72, width: 132, height: 12), xRadius: 6, yRadius: 6)
+        NSColor.white.withAlphaComponent(0.18).setFill()
+        topHighlight.fill()
+
+        let bottomHighlight = NSBezierPath(roundedRect: NSRect(x: bounds.maxX - 152, y: bounds.minY + 52, width: 118, height: 10), xRadius: 5, yRadius: 5)
+        NSColor.white.withAlphaComponent(0.13).setFill()
+        bottomHighlight.fill()
+
+        let ringRect = NSRect(x: bounds.midX - 88, y: bounds.midY - 88, width: 176, height: 176)
+        let ringPath = NSBezierPath(ovalIn: ringRect)
+        NSColor.white.withAlphaComponent(0.28).setStroke()
+        ringPath.lineWidth = 1.5
+        ringPath.stroke()
+    }
+
+}
+
+private final class OnboardingWindowController: NSWindowController {
+    private let pages = [
+        OnboardingPage(
+            symbolName: "keyboard.badge.eye",
+            titleKey: "guide.page.welcome.title",
+            messageKey: "guide.page.welcome.message",
+            showsAccessibilityButton: false,
+            accentColor: .systemIndigo
+        ),
+        OnboardingPage(
+            symbolName: "hand.raised.fill",
+            titleKey: "guide.page.permission.title",
+            messageKey: "guide.page.permission.message",
+            showsAccessibilityButton: true,
+            accentColor: .systemTeal
+        ),
+        OnboardingPage(
+            symbolName: "switch.2",
+            titleKey: "guide.page.mode.title",
+            messageKey: "guide.page.mode.message",
+            showsAccessibilityButton: false,
+            accentColor: .systemOrange
+        ),
+        OnboardingPage(
+            symbolName: "menubar.rectangle",
+            titleKey: "guide.page.menu.title",
+            messageKey: "guide.page.menu.message",
+            showsAccessibilityButton: false,
+            accentColor: .systemBlue
+        )
+    ]
+
+    private var pageIndex = 0
+    private let heroView = OnboardingHeroView()
+    private let appNameLabel = NSTextField(labelWithString: "MacFocusFix")
+    private let titleLabel = NSTextField(labelWithString: "")
+    private let messageLabel = NSTextField(wrappingLabelWithString: "")
+    private let pageLabel = NSTextField(labelWithString: "")
+    private var progressDots: [NSView] = []
+    private let backButton = NSButton(title: "", target: nil, action: nil)
+    private let nextButton = NSButton(title: "", target: nil, action: nil)
+    private let accessibilityButton = NSButton(title: "", target: nil, action: nil)
+
+    init() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 720, height: 460),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = L10n.tr("guide.windowTitle")
+        window.titlebarAppearsTransparent = true
+        window.isReleasedWhenClosed = false
+        window.center()
+        super.init(window: window)
+        buildContent()
+        updatePage()
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func showGuide() {
+        pageIndex = 0
+        updatePage()
+        window?.center()
+        showWindow(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func buildContent() {
+        guard let contentView = window?.contentView else { return }
+        contentView.wantsLayer = true
+
+        let materialView = NSVisualEffectView()
+        materialView.material = .hudWindow
+        materialView.blendingMode = .behindWindow
+        materialView.state = .active
+        materialView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(materialView)
+
+        let container = NSStackView()
+        container.orientation = .horizontal
+        container.alignment = .centerY
+        container.spacing = 34
+        container.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(container)
+
+        heroView.translatesAutoresizingMaskIntoConstraints = false
+
+        let textContainer = NSStackView()
+        textContainer.orientation = .vertical
+        textContainer.alignment = .leading
+        textContainer.spacing = 18
+        textContainer.translatesAutoresizingMaskIntoConstraints = false
+
+        appNameLabel.font = .systemFont(ofSize: 12, weight: .semibold)
+        appNameLabel.textColor = .secondaryLabelColor
+        appNameLabel.alignment = .left
+
+        titleLabel.font = .systemFont(ofSize: 31, weight: .bold)
+        titleLabel.alignment = .left
+        titleLabel.maximumNumberOfLines = 2
+        titleLabel.lineBreakMode = .byWordWrapping
+
+        messageLabel.font = .systemFont(ofSize: 15.5)
+        messageLabel.textColor = .secondaryLabelColor
+        messageLabel.alignment = .left
+        messageLabel.maximumNumberOfLines = 5
+
+        accessibilityButton.target = self
+        accessibilityButton.action = #selector(openAccessibilitySettings)
+        accessibilityButton.bezelStyle = .rounded
+
+        pageLabel.font = .systemFont(ofSize: 12)
+        pageLabel.textColor = .tertiaryLabelColor
+        pageLabel.alignment = .left
+
+        let progressStack = NSStackView()
+        progressStack.orientation = .horizontal
+        progressStack.alignment = .centerY
+        progressStack.spacing = 7
+        progressDots = pages.map { _ in
+            let dot = NSView()
+            dot.wantsLayer = true
+            dot.layer?.cornerRadius = 4
+            dot.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                dot.widthAnchor.constraint(equalToConstant: 8),
+                dot.heightAnchor.constraint(equalToConstant: 8)
+            ])
+            progressStack.addArrangedSubview(dot)
+            return dot
+        }
+
+        let titleStack = NSStackView(views: [appNameLabel, titleLabel, messageLabel])
+        titleStack.orientation = .vertical
+        titleStack.alignment = .leading
+        titleStack.spacing = 12
+
+        textContainer.addArrangedSubview(titleStack)
+        textContainer.addArrangedSubview(accessibilityButton)
+
+        let spacer = NSView()
+        spacer.setContentHuggingPriority(.defaultLow, for: .vertical)
+        textContainer.addArrangedSubview(spacer)
+
+        let progressFooter = NSStackView(views: [progressStack, pageLabel])
+        progressFooter.orientation = .horizontal
+        progressFooter.alignment = .centerY
+        progressFooter.spacing = 12
+        textContainer.addArrangedSubview(progressFooter)
+
+        let buttonStack = NSStackView(views: [backButton, nextButton])
+        buttonStack.orientation = .horizontal
+        buttonStack.alignment = .centerY
+        buttonStack.distribution = .fillEqually
+        buttonStack.spacing = 12
+        textContainer.addArrangedSubview(buttonStack)
+
+        backButton.target = self
+        backButton.action = #selector(showPreviousPage)
+        backButton.bezelStyle = .rounded
+
+        nextButton.target = self
+        nextButton.action = #selector(showNextPage)
+        nextButton.bezelStyle = .rounded
+        nextButton.keyEquivalent = "\r"
+
+        container.addArrangedSubview(heroView)
+        container.addArrangedSubview(textContainer)
+
+        NSLayoutConstraint.activate([
+            materialView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            materialView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            materialView.topAnchor.constraint(equalTo: contentView.topAnchor),
+            materialView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            container.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 32),
+            container.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -36),
+            container.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 40),
+            container.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -32),
+            heroView.widthAnchor.constraint(equalToConstant: 286),
+            heroView.heightAnchor.constraint(equalTo: container.heightAnchor),
+            textContainer.widthAnchor.constraint(equalToConstant: 330),
+            messageLabel.widthAnchor.constraint(equalTo: textContainer.widthAnchor),
+            buttonStack.widthAnchor.constraint(equalToConstant: 260),
+            backButton.heightAnchor.constraint(equalToConstant: 32),
+            nextButton.heightAnchor.constraint(equalToConstant: 32)
+        ])
+    }
+
+    private func updatePage() {
+        let page = pages[pageIndex]
+        heroView.accentColor = page.accentColor
+        heroView.setSymbolName(page.symbolName)
+        titleLabel.stringValue = L10n.tr(page.titleKey)
+        messageLabel.stringValue = L10n.tr(page.messageKey)
+        pageLabel.stringValue = String(format: L10n.tr("guide.pageIndicator"), pageIndex + 1, pages.count)
+        accessibilityButton.title = L10n.tr("guide.openAccessibilitySettings")
+        accessibilityButton.isHidden = !page.showsAccessibilityButton
+        backButton.title = L10n.tr("guide.back")
+        backButton.isEnabled = pageIndex > 0
+        nextButton.title = pageIndex == pages.count - 1 ? L10n.tr("guide.getStarted") : L10n.tr("guide.continue")
+
+        for (index, dot) in progressDots.enumerated() {
+            dot.layer?.backgroundColor = index == pageIndex
+                ? page.accentColor.cgColor
+                : NSColor.separatorColor.withAlphaComponent(0.55).cgColor
+        }
+    }
+
+    @objc private func showPreviousPage() {
+        guard pageIndex > 0 else { return }
+        pageIndex -= 1
+        updatePage()
+    }
+
+    @objc private func showNextPage() {
+        guard pageIndex < pages.count - 1 else {
+            close()
+            return
+        }
+        pageIndex += 1
+        updatePage()
+    }
+
+    @objc private func openAccessibilitySettings() {
+        openAccessibilitySettingsPane()
+    }
+}
+
 private final class MenuBarController: NSObject, NSMenuDelegate {
     private let focusController: FocusController
+    private let onShowGuide: () -> Void
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     private let menu = NSMenu()
     private let statusMenuItem = NSMenuItem()
@@ -629,9 +953,11 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
     private let simplifiedChineseLanguageMenuItem = NSMenuItem()
     private let versionMenuItem = NSMenuItem()
     private let launchAtLoginMenuItem = NSMenuItem()
+    private let guideMenuItem = NSMenuItem()
 
-    init(focusController: FocusController) {
+    init(focusController: FocusController, onShowGuide: @escaping () -> Void) {
         self.focusController = focusController
+        self.onShowGuide = onShowGuide
         super.init()
         configureStatusItem()
         configureMenu()
@@ -698,6 +1024,10 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
         accessibilityItem.target = self
         menu.addItem(accessibilityItem)
 
+        guideMenuItem.target = self
+        guideMenuItem.action = #selector(showGuide)
+        menu.addItem(guideMenuItem)
+
         launchAtLoginMenuItem.target = self
         launchAtLoginMenuItem.action = #selector(toggleLaunchAtLogin)
         menu.addItem(launchAtLoginMenuItem)
@@ -733,6 +1063,7 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
         updateFocusModeMenuItems()
         updateLanguageMenuItems()
         updateLaunchAtLoginMenuItem()
+        guideMenuItem.title = L10n.tr("menu.openGuide")
         versionMenuItem.title = String(format: L10n.tr("menu.versionFormat"), appVersion())
 
         guard let button = statusItem.button else { return }
@@ -909,9 +1240,11 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
     }
 
     @objc private func openAccessibilitySettings() {
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
-            NSWorkspace.shared.open(url)
-        }
+        openAccessibilitySettingsPane()
+    }
+
+    @objc private func showGuide() {
+        onShowGuide()
     }
 
     @objc private func openGitHub() {
@@ -926,6 +1259,7 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
 private final class AppDelegate: NSObject, NSApplicationDelegate {
     private let focusController: FocusController
     private var menuBarController: MenuBarController?
+    private var onboardingWindowController: OnboardingWindowController?
 
     init(options: Options) {
         focusController = FocusController(options: options)
@@ -933,7 +1267,9 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        menuBarController = MenuBarController(focusController: focusController)
+        menuBarController = MenuBarController(focusController: focusController) { [weak self] in
+            self?.showGuide()
+        }
         showWelcomeIfNeeded()
         focusController.start(prompt: false)
     }
@@ -947,17 +1283,14 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
         appDefaults.set(true, forKey: userDefaultsWelcomeKey)
         appDefaults.synchronize()
 
-        let alert = NSAlert()
-        alert.messageText = L10n.tr("welcome.title")
-        alert.informativeText = L10n.tr("welcome.message")
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: L10n.tr("welcome.openAccessibilitySettings"))
-        alert.addButton(withTitle: L10n.tr("welcome.later"))
+        showGuide()
+    }
 
-        if alert.runModal() == .alertFirstButtonReturn,
-           let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
-            NSWorkspace.shared.open(url)
+    private func showGuide() {
+        if onboardingWindowController == nil {
+            onboardingWindowController = OnboardingWindowController()
         }
+        onboardingWindowController?.showGuide()
     }
 }
 

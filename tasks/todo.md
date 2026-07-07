@@ -1,5 +1,68 @@
 # macOS 27 Remote Focus Fix
 
+## Onboarding Hero Layer Simplification Plan
+
+- [x] Remove the nested glass plate from the guide hero artwork.
+  - Verify: the hero has one clear gradient card, one line ring, and one symbol without a card-inside-card effect.
+- [x] Keep icon contrast without adding another visible layer.
+  - Verify: the symbol stays white with a subtle shadow only.
+- [x] Build and reopen the guide.
+  - Verify: `swift build` succeeds and the menu guide can be triggered.
+
+## Onboarding Hero Layer Simplification Review
+
+- Removed the nested translucent plate behind the guide hero symbol.
+- Kept contrast by rendering the symbol in white with only a subtle shadow, leaving the gradient card and fine line ring as the main visual structure.
+- Verified `swift build`, `git diff --check`, and reopened the welcome guide from the menu bar.
+
+## Onboarding Icon Contrast Tweak Plan
+
+- [x] Increase hero symbol contrast against the colored guide card.
+  - Verify: symbols no longer use the same accent color as the card background.
+- [x] Build and reopen the app for a live check.
+  - Verify: `swift build` and `./script/build_and_run.sh run` succeed.
+
+## Onboarding Icon Contrast Tweak Review
+
+- Changed the guide hero symbols to white and placed them on a translucent glass plate so they remain legible over each colored card background.
+- Verified `swift build`, `git diff --check`, and reopened the app, then triggered the welcome guide from the menu bar.
+
+## Onboarding Visual Polish Plan
+
+- [x] Upgrade the guide window from a plain centered stack to a richer two-column welcome surface.
+  - Verify: the guide still opens on first launch and from the menu item without changing focus-fix behavior.
+- [x] Add a restrained AppKit illustration panel, page accent colors, and progress dots.
+  - Verify: each guide page updates the symbol, accent treatment, and page indicator together.
+- [x] Keep the localized copy and permissions action intact.
+  - Verify: English and Simplified Chinese `.strings` files still lint successfully.
+- [x] Build the app after the visual change.
+  - Verify: `swift build` succeeds.
+
+## Onboarding Visual Polish Review
+
+- Reworked the welcome guide into a wider two-column window with a translucent macOS material background.
+- Added a custom AppKit hero panel with per-page SF Symbols, accent colors, subtle rings, and compact progress dots.
+- Kept the existing guide copy, Accessibility Settings button, menu reopen path, and first-launch behavior intact.
+- Verified `plutil -lint`, `swift build`, `git diff --check`, and `./script/build_and_run.sh --verify`.
+
+## Onboarding Guide Plan
+
+- [x] Replace the first-launch welcome alert with a lightweight TourKit-style guide window.
+  - Verify: first launch still sets `hasShownWelcome`, and the guide can be closed without blocking app startup.
+- [x] Add a menu item to reopen the guide from the menu bar app.
+  - Verify: the menu exposes a localized guide entry and opens the same window.
+- [x] Localize the guide copy in English and Simplified Chinese.
+  - Verify: both `.strings` files lint successfully.
+- [x] Build and package the app after the UI change.
+  - Verify: `swift build` and the app packaging script succeed.
+
+## Onboarding Guide Review
+
+- Replaced the blocking first-launch alert with a reusable AppKit onboarding window inspired by TourKit's paged guide pattern.
+- Added a localized menu bar item to reopen the guide at any time.
+- Added four localized guide pages covering the app purpose, Accessibility permission, focus modes, and menu bar controls.
+- Verified `swift build`, `.strings` linting, and `./script/build_app.sh`.
+
 ## README GitHub Attachment Demo Plan
 
 - [x] Replace local mp4 embeds in the English README with GitHub attachment video links.

@@ -33,8 +33,25 @@
 "menu.launchAtLogin" = "开机启动";
 "menu.launchAtLoginRequiresApproval" = "开机启动（需要批准）";
 "menu.openGitHub" = "打开 GitHub";
+"menu.checkForUpdates" = "检查更新";
+"menu.checkingForUpdates" = "正在检查更新…";
+"menu.installingUpdate" = "正在安装更新…";
 "menu.versionFormat" = "版本 %@";
 "menu.quit" = "退出 MacFocusFix";
+
+"update.availableTitle" = "发现新版本";
+"update.availableMessage" = "你正在使用 MacFocusFix %@，最新版本是 %@。MacFocusFix 可以自动下载适合这台 Mac 的构建、安装并重启。";
+"update.developmentBuildTitle" = "开发构建";
+"update.developmentBuildMessage" = "你正在使用 MacFocusFix %@，最新版本是 %@。开发构建不启用自动安装。";
+"update.currentTitle" = "MacFocusFix 已是最新版";
+"update.currentMessage" = "你正在使用 MacFocusFix %@，最新版本是 %@。";
+"update.failureTitle" = "无法检查更新";
+"update.failureMessage" = "MacFocusFix 无法访问 GitHub Releases。%@";
+"update.missingAssetMessage" = "最新版本 %@ 没有提供适合这台 Mac（%@）的下载包。";
+"update.install" = "更新";
+"update.installFailureTitle" = "无法安装更新";
+"update.installFailureMessage" = "MacFocusFix 已下载更新，但无法完成安装。%@";
+"update.later" = "稍后";
 
 "guide.windowTitle" = "欢迎使用 MacFocusFix";
 "guide.page.welcome.title" = "让远程点击保持焦点";

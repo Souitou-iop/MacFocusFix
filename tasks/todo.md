@@ -1,5 +1,72 @@
 # macOS 27 Remote Focus Fix
 
+## Arm64-Only Release Plan
+
+- [x] Change GitHub release packaging to build only Apple Silicon arm64 artifacts.
+  - Verify: `.github/workflows/release.yml` no longer loops over `x86_64` and names one arm64 zip.
+- [x] Update user-facing release documentation to say releases are Apple Silicon only.
+  - Verify: README files no longer instruct users to choose an Intel `x86_64` download.
+- [x] Record the release architecture decision in the task log.
+  - Verify: future maintainers can see that x86_64 release builds are intentionally discontinued.
+
+## Arm64-Only Release Review
+
+- Changed the GitHub release workflow to build and upload only `MacFocusFix-<version>-macOS-arm64.zip`.
+- Updated English and Simplified Chinese READMEs to state that public releases target Apple Silicon arm64, while Intel users can build from source if needed.
+- Kept `script/build_app.sh` capable of manual `x86_64` builds, but discontinued x86_64 release artifacts going forward.
+
+## Auto Update Pre-Commit Hardening Plan
+
+- [x] Validate the downloaded app bundle before replacing the current app.
+  - Verify: bundle id and version match the expected release metadata, and `codesign --verify` succeeds even for ad hoc signing.
+- [x] Prevent local dev builds from using the automatic installer path.
+  - Verify: versions containing `dev` show an explanatory alert instead of installing a release over the dev app.
+- [x] Re-run build, localization, and release asset checks.
+  - Verify: `.strings` lint, `swift build`, `git diff --check`, and live asset probe succeed.
+
+## Auto Update Pre-Commit Hardening Review
+
+- Added pre-install validation for downloaded update bundles: expected bundle identifier, expected release version, and `codesign --verify --deep --strict` must pass before replacing the current app.
+- Disabled automatic install for local development builds such as `0.0.0-dev`; they now show a localized development-build notice instead of replacing the dev app with a release build.
+- Verified `.strings` linting, `swift build`, a live release zip validation against `v0.1.11`, and the dev-build update-check UX.
+
+## In-App Auto Update Install Plan
+
+- [x] Resolve the correct release asset for the current CPU architecture from GitHub Releases.
+  - Verify: latest release JSON exposes a matching `.zip` asset for `arm64` or `x86_64`.
+- [x] Replace the release-page jump with a localized `Update` action that downloads and installs the asset.
+  - Verify: update available alert starts an in-app download instead of opening Releases by default.
+- [x] Install by unzipping to a temporary directory, replacing the current app bundle, and reopening MacFocusFix.
+  - Verify: the install path is limited to the current app bundle and failure shows a localized error.
+- [x] Validate build, localization, and live asset discovery.
+  - Verify: `.strings` lint, `swift build`, and GitHub latest-release asset probe succeed.
+
+## In-App Auto Update Install Review
+
+- Changed update-available alerts from opening the Releases page to a localized `Update` action.
+- The updater now selects the matching macOS zip asset for the current hardware architecture, downloads it, unzips it, replaces the running `.app` bundle, and restarts MacFocusFix.
+- Added failure handling for network/API errors, missing compatible release assets, invalid app bundle paths, unzip failures, and install failures.
+- Verified `.strings` linting, `swift build`, `git diff --check`, live latest-release asset discovery, and downloaded/unzipped the current arm64 release asset to confirm it contains `MacFocusFix.app` with version `0.1.11`.
+- Performed an end-to-end update test by building `dist/MacFocusFix.app` as `0.1.10`, launching it, triggering the updater, and confirming the app bundle was replaced with release `0.1.11` and remained codesign-valid. Rebuilt `dist` back to the local dev app afterward.
+
+## Manual Update Check Plan
+
+- [x] Add a menu item to check GitHub Releases for the latest MacFocusFix version.
+  - Verify: the menu exposes a localized manual update action near GitHub/version items.
+- [x] Compare the latest release tag against `CFBundleShortVersionString` with semantic version parsing.
+  - Verify: `v0.2.0` is newer than `0.1.9`, equal versions do not prompt an update, and dev/local versions are handled conservatively.
+- [x] Show localized result alerts for update available, already current, and check failure.
+  - Verify: update-available can open the release page, and failure shows a useful message.
+- [x] Validate build, localization, and a live GitHub API probe.
+  - Verify: `plutil -lint`, `swift build`, and a release API check succeed.
+
+## Manual Update Check Review
+
+- Added a localized `Check for Updates` menu item beside the GitHub and version menu entries.
+- Added a lightweight GitHub Releases checker that fetches the latest release, compares semantic versions against `CFBundleShortVersionString`, and handles local/dev versions conservatively.
+- Added localized alerts for update available, already current, unknown local version, and check failure; update alerts can open the release page.
+- Verified `.strings` linting, `swift build`, `git diff --check`, semantic version edge cases, a live GitHub latest-release probe (`v0.1.11`), and triggered the menu item in the running app.
+
 ## Onboarding Hero Layer Simplification Plan
 
 - [x] Remove the nested glass plate from the guide hero artwork.

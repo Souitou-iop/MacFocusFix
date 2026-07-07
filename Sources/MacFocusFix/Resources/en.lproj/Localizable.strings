@@ -33,8 +33,25 @@
 "menu.launchAtLogin" = "Launch at Login";
 "menu.launchAtLoginRequiresApproval" = "Launch at Login (Needs Approval)";
 "menu.openGitHub" = "Open GitHub";
+"menu.checkForUpdates" = "Check for Updates";
+"menu.checkingForUpdates" = "Checking for Updates...";
+"menu.installingUpdate" = "Installing Update...";
 "menu.versionFormat" = "Version %@";
 "menu.quit" = "Quit MacFocusFix";
+
+"update.availableTitle" = "Update available";
+"update.availableMessage" = "You are using MacFocusFix %@. The latest release is %@. MacFocusFix can download the right build for this Mac, install it, and restart.";
+"update.developmentBuildTitle" = "Development build";
+"update.developmentBuildMessage" = "You are using MacFocusFix %@. The latest release is %@. Automatic install is disabled for development builds.";
+"update.currentTitle" = "MacFocusFix is up to date";
+"update.currentMessage" = "You are using MacFocusFix %@. The latest release is %@.";
+"update.failureTitle" = "Could not check for updates";
+"update.failureMessage" = "MacFocusFix could not reach GitHub Releases. %@";
+"update.missingAssetMessage" = "The latest release %@ does not include a compatible download for this Mac (%@).";
+"update.install" = "Update";
+"update.installFailureTitle" = "Could not install update";
+"update.installFailureMessage" = "MacFocusFix downloaded the update but could not install it. %@";
+"update.later" = "Later";
 
 "guide.windowTitle" = "Welcome to MacFocusFix";
 "guide.page.welcome.title" = "Keep remote clicks focused";

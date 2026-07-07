@@ -89,16 +89,14 @@ jobs:
           fi
 
           rm -f dist/*.zip
-          for ARCH in arm64 x86_64; do
-            APP_ARCH="${ARCH}" ./script/build_app.sh
+          APP_ARCH="arm64" ./script/build_app.sh
 
-            if [[ "${GITHUB_REF_TYPE}" == "tag" && "${SIGNING_AVAILABLE}" == "true" ]]; then
-              ./script/notarize_app.sh
-            fi
+          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${SIGNING_AVAILABLE}" == "true" ]]; then
+            ./script/notarize_app.sh
+          fi
 
-            ZIP_NAME="MacFocusFix-${RELEASE_VERSION}-macOS-${ARCH}.zip"
-            ditto -c -k --sequesterRsrc --keepParent dist/MacFocusFix.app "dist/${ZIP_NAME}"
-          done
+          ZIP_NAME="MacFocusFix-${RELEASE_VERSION}-macOS-arm64.zip"
+          ditto -c -k --sequesterRsrc --keepParent dist/MacFocusFix.app "dist/${ZIP_NAME}"
         env:
           CONFIGURATION: release
           APP_BUILD: ${{ github.run_number }}
@@ -122,12 +120,12 @@ jobs:
           ## Changes
 
           - See the full changelog for commits included in this release.
-          - Release assets are provided separately for Apple Silicon (arm64) and Intel Macs (x86_64).
+          - Release assets are provided for Apple Silicon Macs (arm64).
 
           ## 更新内容
 
           - 本版本包含的具体提交内容请查看完整更新对比。
-          - 安装包继续分别提供 Apple Silicon（arm64）和 Intel Mac（x86_64）版本。
+          - 安装包面向 Apple Silicon Mac（arm64）。
 
           **Full Changelog**: ${CHANGELOG_URL}
           EOF

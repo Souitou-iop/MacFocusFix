@@ -87,7 +87,7 @@ Official tagged releases are currently built with ad hoc signing. If you build t
 - If the focus fix does not work, open the menu bar item and choose Open Accessibility Settings, then make sure MacFocusFix is enabled under Accessibility. Quit and relaunch the app after changing permission.
 - If the app opens in the wrong language, use the menu bar Language items to choose English or Simplified Chinese, then restart MacFocusFix.
 - If an update asks for Accessibility permission again, it is usually because ad hoc signing does not provide a stable Developer ID identity. A Developer ID signed and notarized build is needed to make updates smoother.
-- Choose the `arm64` download for Apple Silicon Macs and `x86_64` for Intel Macs. The release assets are intentionally split to keep file size down.
+- Public releases provide an `arm64` download for Apple Silicon Macs. Intel Macs can build from source if needed, but release assets are no longer produced for `x86_64`.
 
 ## Troubleshooting Logs
 
@@ -134,4 +134,4 @@ Quit MacFocusFix, then move `MacFocusFix.app` to the Trash. If you granted Acces
 
 ## Compatibility
 
-MacFocusFix is built with SwiftPM and targets macOS 14 or later. Releases provide separate downloads for Apple Silicon (`arm64`) and Intel Macs (`x86_64`).
+MacFocusFix is built with SwiftPM and targets macOS 14 or later. Public releases are built for Apple Silicon (`arm64`).

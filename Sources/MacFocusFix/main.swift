@@ -21,6 +21,7 @@ private let userDefaultsModeKey = "focusMode"
 private let userDefaultsWelcomeKey = "hasShownWelcome"
 private let userDefaultsLanguageKey = "appLanguage"
 private let projectURL = URL(string: "https://github.com/Souitou-iop/MacFocusFix")!
+private let latestReleaseAPIURL = URL(string: "https://api.github.com/repos/Souitou-iop/MacFocusFix/releases/latest")!
 private let appDefaults = UserDefaults(suiteName: bundleID) ?? .standard
 
 private func openAccessibilitySettingsPane() {
@@ -620,6 +621,291 @@ private enum RemoteAppDetector {
     }
 }
 
+private struct AppVersion: Comparable {
+    let components: [Int]
+
+    init?(_ rawValue: String) {
+        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalized = trimmed.hasPrefix("v") || trimmed.hasPrefix("V")
+            ? String(trimmed.dropFirst())
+            : trimmed
+        let core = normalized.split(separator: "-", maxSplits: 1).first.map(String.init) ?? normalized
+        let parsed = core.split(separator: ".").compactMap { Int($0) }
+
+        guard !parsed.isEmpty, parsed.count == core.split(separator: ".").count else { return nil }
+        components = parsed
+    }
+
+    static func == (lhs: AppVersion, rhs: AppVersion) -> Bool {
+        compare(lhs, rhs) == 0
+    }
+
+    static func < (lhs: AppVersion, rhs: AppVersion) -> Bool {
+        compare(lhs, rhs) < 0
+    }
+
+    private static func compare(_ lhs: AppVersion, _ rhs: AppVersion) -> Int {
+        let count = max(lhs.components.count, rhs.components.count)
+
+        for index in 0..<count {
+            let left = index < lhs.components.count ? lhs.components[index] : 0
+            let right = index < rhs.components.count ? rhs.components[index] : 0
+
+            if left != right {
+                return left < right ? -1 : 1
+            }
+        }
+
+        return 0
+    }
+}
+
+private struct LatestRelease: Decodable {
+    let tagName: String
+    let assets: [ReleaseAsset]
+
+    private enum CodingKeys: String, CodingKey {
+        case tagName = "tag_name"
+        case assets
+    }
+}
+
+private struct ReleaseAsset: Decodable {
+    let name: String
+    let browserDownloadURL: URL
+
+    private enum CodingKeys: String, CodingKey {
+        case name
+        case browserDownloadURL = "browser_download_url"
+    }
+}
+
+private enum UpdateCheckResult {
+    case updateAvailable(currentVersion: String, latestVersion: String, asset: ReleaseAsset)
+    case current(currentVersion: String, latestVersion: String)
+    case localDevelopmentBuild(currentVersion: String, latestVersion: String)
+    case missingCompatibleAsset(latestVersion: String, architecture: String)
+}
+
+private enum UpdateCheckError: LocalizedError {
+    case invalidResponse
+    case httpStatus(Int)
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidResponse:
+            return "Invalid response from GitHub."
+        case .httpStatus(let statusCode):
+            return "GitHub returned HTTP \(statusCode)."
+        }
+    }
+}
+
+private enum UpdateInstallError: LocalizedError {
+    case missingAppBundle
+    case missingUnzippedApp
+    case invalidBundleIdentifier(String)
+    case invalidBundleVersion(String)
+    case codesignVerificationFailed(Int32)
+    case unzipFailed(Int32)
+
+    var errorDescription: String? {
+        switch self {
+        case .missingAppBundle:
+            return "Could not locate the running app bundle."
+        case .missingUnzippedApp:
+            return "The downloaded update did not contain MacFocusFix.app."
+        case .invalidBundleIdentifier(let identifier):
+            return "The downloaded app has unexpected bundle identifier \(identifier)."
+        case .invalidBundleVersion(let version):
+            return "The downloaded app has unexpected version \(version)."
+        case .codesignVerificationFailed(let status):
+            return "The downloaded app did not pass code signature verification. Exit status: \(status)."
+        case .unzipFailed(let status):
+            return "Could not unzip the update. Exit status: \(status)."
+        }
+    }
+}
+
+private final class UpdateChecker {
+    func check(currentVersion: String, completion: @escaping (Result<UpdateCheckResult, Error>) -> Void) {
+        var request = URLRequest(url: latestReleaseAPIURL)
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.setValue("MacFocusFix", forHTTPHeaderField: "User-Agent")
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                completion(.failure(UpdateCheckError.invalidResponse))
+                return
+            }
+
+            guard (200..<300).contains(httpResponse.statusCode) else {
+                completion(.failure(UpdateCheckError.httpStatus(httpResponse.statusCode)))
+                return
+            }
+
+            do {
+                let release = try JSONDecoder().decode(LatestRelease.self, from: data ?? Data())
+                completion(.success(self.result(currentVersion: currentVersion, release: release)))
+            } catch {
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+
+    private func result(currentVersion: String, release: LatestRelease) -> UpdateCheckResult {
+        let latestVersionText = release.tagName
+        let architecture = ProcessInfo.processInfo.machineHardwareName
+        let asset = compatibleAsset(in: release, architecture: architecture)
+
+        if currentVersion.lowercased().contains("dev") {
+            return .localDevelopmentBuild(currentVersion: currentVersion, latestVersion: latestVersionText)
+        }
+
+        guard let latestVersion = AppVersion(latestVersionText) else {
+            return .localDevelopmentBuild(currentVersion: currentVersion, latestVersion: latestVersionText)
+        }
+
+        guard let installedVersion = AppVersion(currentVersion) else {
+            return .localDevelopmentBuild(currentVersion: currentVersion, latestVersion: latestVersionText)
+        }
+
+        if installedVersion < latestVersion {
+            guard let asset else {
+                return .missingCompatibleAsset(
+                    latestVersion: latestVersionText,
+                    architecture: architecture
+                )
+            }
+
+            return .updateAvailable(
+                currentVersion: currentVersion,
+                latestVersion: latestVersionText,
+                asset: asset
+            )
+        }
+
+        return .current(currentVersion: currentVersion, latestVersion: latestVersionText)
+    }
+
+    private func compatibleAsset(in release: LatestRelease, architecture: String) -> ReleaseAsset? {
+        return release.assets.first { asset in
+            let name = asset.name.lowercased()
+            return name.hasSuffix(".zip") && name.contains("macos") && name.contains(architecture)
+        }
+    }
+}
+
+private extension ProcessInfo {
+    var machineHardwareName: String {
+        var systemInfo = utsname()
+        uname(&systemInfo)
+
+        return withUnsafePointer(to: &systemInfo.machine) { pointer in
+            pointer.withMemoryRebound(to: CChar.self, capacity: 1) { cString in
+                String(cString: cString)
+            }
+        }
+    }
+}
+
+private final class UpdateInstaller {
+    func install(asset: ReleaseAsset, expectedVersion: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        let downloadURL = asset.browserDownloadURL
+        URLSession.shared.downloadTask(with: downloadURL) { temporaryURL, _, error in
+            if let error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let temporaryURL else {
+                completion(.failure(UpdateCheckError.invalidResponse))
+                return
+            }
+
+            do {
+                try self.installDownloadedArchive(at: temporaryURL, expectedVersion: expectedVersion)
+                completion(.success(()))
+            } catch {
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+
+    private func installDownloadedArchive(at archiveURL: URL, expectedVersion: String) throws {
+        let fileManager = FileManager.default
+        let temporaryDirectory = fileManager.temporaryDirectory
+            .appendingPathComponent("MacFocusFixUpdate-\(UUID().uuidString)", isDirectory: true)
+
+        try fileManager.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+        defer { try? fileManager.removeItem(at: temporaryDirectory) }
+
+        let unzipProcess = Process()
+        unzipProcess.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
+        unzipProcess.arguments = ["-q", archiveURL.path, "-d", temporaryDirectory.path]
+
+        try unzipProcess.run()
+        unzipProcess.waitUntilExit()
+
+        guard unzipProcess.terminationStatus == 0 else {
+            throw UpdateInstallError.unzipFailed(unzipProcess.terminationStatus)
+        }
+
+        let unzippedAppURL = temporaryDirectory.appendingPathComponent("MacFocusFix.app", isDirectory: true)
+        guard fileManager.fileExists(atPath: unzippedAppURL.path) else {
+            throw UpdateInstallError.missingUnzippedApp
+        }
+
+        try validateDownloadedApp(at: unzippedAppURL, expectedVersion: expectedVersion)
+
+        let currentAppURL = Bundle.main.bundleURL
+        guard currentAppURL.pathExtension == "app" else {
+            throw UpdateInstallError.missingAppBundle
+        }
+
+        let backupURL = temporaryDirectory.appendingPathComponent("MacFocusFix-current.app", isDirectory: true)
+        try fileManager.moveItem(at: currentAppURL, to: backupURL)
+
+        do {
+            try fileManager.moveItem(at: unzippedAppURL, to: currentAppURL)
+        } catch {
+            try? fileManager.moveItem(at: backupURL, to: currentAppURL)
+            throw error
+        }
+    }
+
+    private func validateDownloadedApp(at appURL: URL, expectedVersion: String) throws {
+        let infoPlistURL = appURL.appendingPathComponent("Contents/Info.plist")
+        let infoPlist = NSDictionary(contentsOf: infoPlistURL) as? [String: Any]
+        let identifier = infoPlist?["CFBundleIdentifier"] as? String ?? ""
+        let version = infoPlist?["CFBundleShortVersionString"] as? String ?? ""
+
+        guard identifier == bundleID else {
+            throw UpdateInstallError.invalidBundleIdentifier(identifier)
+        }
+
+        guard AppVersion(version) == AppVersion(expectedVersion) else {
+            throw UpdateInstallError.invalidBundleVersion(version)
+        }
+
+        let verifyProcess = Process()
+        verifyProcess.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
+        verifyProcess.arguments = ["--verify", "--deep", "--strict", appURL.path]
+
+        try verifyProcess.run()
+        verifyProcess.waitUntilExit()
+
+        guard verifyProcess.terminationStatus == 0 else {
+            throw UpdateInstallError.codesignVerificationFailed(verifyProcess.terminationStatus)
+        }
+    }
+}
+
 private struct OnboardingPage {
     let symbolName: String
     let titleKey: String
@@ -952,8 +1238,13 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
     private let englishLanguageMenuItem = NSMenuItem()
     private let simplifiedChineseLanguageMenuItem = NSMenuItem()
     private let versionMenuItem = NSMenuItem()
+    private let checkForUpdatesMenuItem = NSMenuItem()
     private let launchAtLoginMenuItem = NSMenuItem()
     private let guideMenuItem = NSMenuItem()
+    private let updateChecker = UpdateChecker()
+    private let updateInstaller = UpdateInstaller()
+    private var isCheckingForUpdates = false
+    private var isInstallingUpdate = false
 
     init(focusController: FocusController, onShowGuide: @escaping () -> Void) {
         self.focusController = focusController
@@ -1038,6 +1329,10 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
         helpItem.target = self
         menu.addItem(helpItem)
 
+        checkForUpdatesMenuItem.target = self
+        checkForUpdatesMenuItem.action = #selector(checkForUpdates)
+        menu.addItem(checkForUpdatesMenuItem)
+
         versionMenuItem.isEnabled = false
         menu.addItem(versionMenuItem)
 
@@ -1064,6 +1359,14 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
         updateLanguageMenuItems()
         updateLaunchAtLoginMenuItem()
         guideMenuItem.title = L10n.tr("menu.openGuide")
+        if isInstallingUpdate {
+            checkForUpdatesMenuItem.title = L10n.tr("menu.installingUpdate")
+        } else if isCheckingForUpdates {
+            checkForUpdatesMenuItem.title = L10n.tr("menu.checkingForUpdates")
+        } else {
+            checkForUpdatesMenuItem.title = L10n.tr("menu.checkForUpdates")
+        }
+        checkForUpdatesMenuItem.isEnabled = !isCheckingForUpdates && !isInstallingUpdate
         versionMenuItem.title = String(format: L10n.tr("menu.versionFormat"), appVersion())
 
         guard let button = statusItem.button else { return }
@@ -1249,6 +1552,99 @@ private final class MenuBarController: NSObject, NSMenuDelegate {
 
     @objc private func openGitHub() {
         NSWorkspace.shared.open(projectURL)
+    }
+
+    @objc private func checkForUpdates() {
+        guard !isCheckingForUpdates && !isInstallingUpdate else { return }
+
+        isCheckingForUpdates = true
+        updateMenu()
+
+        updateChecker.check(currentVersion: appVersion()) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.isCheckingForUpdates = false
+                self.updateMenu()
+
+                switch result {
+                case .success(let updateResult):
+                    self.showUpdateResult(updateResult)
+                case .failure(let error):
+                    self.showUpdateFailure(error)
+                }
+            }
+        }
+    }
+
+    private func showUpdateResult(_ result: UpdateCheckResult) {
+        let alert = NSAlert()
+        alert.alertStyle = .informational
+
+        switch result {
+        case .updateAvailable(let currentVersion, let latestVersion, let asset):
+            alert.messageText = L10n.tr("update.availableTitle")
+            alert.informativeText = String(format: L10n.tr("update.availableMessage"), currentVersion, latestVersion)
+            alert.addButton(withTitle: L10n.tr("update.install"))
+            alert.addButton(withTitle: L10n.tr("update.later"))
+
+            if alert.runModal() == .alertFirstButtonReturn {
+                installUpdate(asset: asset, latestVersion: latestVersion)
+            }
+        case .current(let currentVersion, let latestVersion):
+            alert.messageText = L10n.tr("update.currentTitle")
+            alert.informativeText = String(format: L10n.tr("update.currentMessage"), currentVersion, latestVersion)
+            alert.addButton(withTitle: L10n.tr("alert.ok"))
+            alert.runModal()
+        case .localDevelopmentBuild(let currentVersion, let latestVersion):
+            alert.messageText = L10n.tr("update.developmentBuildTitle")
+            alert.informativeText = String(format: L10n.tr("update.developmentBuildMessage"), currentVersion, latestVersion)
+            alert.addButton(withTitle: L10n.tr("alert.ok"))
+            alert.runModal()
+        case .missingCompatibleAsset(let latestVersion, let architecture):
+            alert.messageText = L10n.tr("update.failureTitle")
+            alert.informativeText = String(format: L10n.tr("update.missingAssetMessage"), latestVersion, architecture)
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: L10n.tr("alert.ok"))
+            alert.runModal()
+        }
+    }
+
+    private func installUpdate(asset: ReleaseAsset, latestVersion: String) {
+        isInstallingUpdate = true
+        updateMenu()
+
+        updateInstaller.install(asset: asset, expectedVersion: latestVersion) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.isInstallingUpdate = false
+                self.updateMenu()
+
+                switch result {
+                case .success:
+                    self.restartApp()
+                case .failure(let error):
+                    self.showUpdateInstallFailure(error)
+                }
+            }
+        }
+    }
+
+    private func showUpdateInstallFailure(_ error: Error) {
+        let alert = NSAlert()
+        alert.messageText = L10n.tr("update.installFailureTitle")
+        alert.informativeText = String(format: L10n.tr("update.installFailureMessage"), error.localizedDescription)
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: L10n.tr("alert.ok"))
+        alert.runModal()
+    }
+
+    private func showUpdateFailure(_ error: Error) {
+        let alert = NSAlert()
+        alert.messageText = L10n.tr("update.failureTitle")
+        alert.informativeText = String(format: L10n.tr("update.failureMessage"), error.localizedDescription)
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: L10n.tr("alert.ok"))
+        alert.runModal()
     }
 
     @objc private func quit() {

@@ -18,6 +18,19 @@
   <a href="https://github.com/Souitou-iop/MacFocusFix/issues">反馈</a>
 </p>
 
+## 演示
+
+<table>
+  <tr>
+    <td align="center" width="50%"><strong>开启前 — 焦点停在旧 App</strong></td>
+    <td align="center" width="50%"><strong>开启后 — 焦点跟随点击</strong></td>
+  </tr>
+  <tr>
+    <td><video src="../%E5%BC%80%E5%90%AF%E5%89%8D.mp4" controls width="100%"></video></td>
+    <td><video src="../%E5%BC%80%E5%90%AF%E5%90%8E.mp4" controls width="100%"></video></td>
+  </tr>
+</table>
+
 ## 为什么写这个软件
 
 升级到 macOS 27 之后，我在使用 UU 远程这类远程控制工具时遇到了一个很奇怪的焦点问题：远程鼠标点击确实能到达目标窗口，按钮会响应，输入框也像是被点到了；但 macOS 没有把这个窗口所属的 App 变成真正的前台 App。Apple 菜单右侧显示的 App 名称仍然停在旧 App，后续键盘输入也继续进入旧 App。

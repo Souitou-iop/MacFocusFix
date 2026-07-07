@@ -18,6 +18,19 @@
   <a href="https://github.com/Souitou-iop/MacFocusFix/issues">Feedback</a>
 </p>
 
+## Demo
+
+<table>
+  <tr>
+    <td align="center" width="50%"><strong>Before — focus stays on the old app</strong></td>
+    <td align="center" width="50%"><strong>After — focus follows the click</strong></td>
+  </tr>
+  <tr>
+    <td><video src="%E5%BC%80%E5%90%AF%E5%89%8D.mp4" controls width="100%"></video></td>
+    <td><video src="%E5%BC%80%E5%90%AF%E5%90%8E.mp4" controls width="100%"></video></td>
+  </tr>
+</table>
+
 ## Why I Built This
 
 After updating to macOS 27, I started seeing a strange remote-control focus bug with tools such as UU Remote. A remote click could still reach the right window control, so buttons and fields looked like they were being clicked. But macOS did not always switch the real foreground app: the app name next to the Apple menu stayed on the previous app, and keyboard input kept going there.

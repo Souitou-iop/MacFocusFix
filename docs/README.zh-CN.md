@@ -20,22 +20,13 @@
 
 ## 演示
 
-<table>
-  <tr>
-    <td align="center" width="50%"><strong>开启前 — 焦点停在旧 App</strong></td>
-    <td align="center" width="50%"><strong>开启后 — 焦点跟随点击</strong></td>
-  </tr>
-  <tr>
-    <td>
-      <video src="../%E5%BC%80%E5%90%AF%E5%89%8D.mp4" controls preload="metadata" width="100%"></video>
-      <p align="center"><a href="../%E5%BC%80%E5%90%AF%E5%89%8D.mp4">打开开启前视频</a></p>
-    </td>
-    <td>
-      <video src="../%E5%BC%80%E5%90%AF%E5%90%8E.mp4" controls preload="metadata" width="100%"></video>
-      <p align="center"><a href="../%E5%BC%80%E5%90%AF%E5%90%8E.mp4">打开开启后视频</a></p>
-    </td>
-  </tr>
-</table>
+**开启前 — 焦点停在旧 App**
+
+https://github.com/user-attachments/assets/7d204367-d2a1-47b9-989d-c1f29b16fc22
+
+**开启后 — 焦点跟随点击**
+
+https://github.com/user-attachments/assets/f0de3a6b-1230-42c9-a297-02f72a61b3ed
 
 ## 为什么写这个软件
 

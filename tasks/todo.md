@@ -1,5 +1,21 @@
 # macOS 27 Remote Focus Fix
 
+## README GitHub Attachment Demo Plan
+
+- [x] Replace local mp4 embeds in the English README with GitHub attachment video links.
+  - Verify: `README.md` contains the two `github.com/user-attachments/assets` URLs and no local mp4 demo links.
+- [x] Replace local mp4 embeds in the Simplified Chinese README with the same GitHub attachment video links.
+  - Verify: `docs/README.zh-CN.md` contains the two `github.com/user-attachments/assets` URLs and no local mp4 demo links.
+- [x] Verify and publish the README update.
+  - Verify: diff only touches the README demo sections plus this task record, then commit and push.
+
+## README GitHub Attachment Demo Review
+
+- Swapped the local HTML video table for standalone GitHub attachment links so GitHub can render native playable video cards like the Transmission README.
+- Kept short before/after labels in each language above the corresponding video card.
+- Verified the README files no longer reference local mp4 demo links and `git diff --check` passes.
+
+
 ## README Demo Video Embed Plan
 
 - [x] Make the English README demo section render the before/after videos with clear GitHub-friendly relative paths.

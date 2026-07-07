@@ -20,22 +20,13 @@
 
 ## Demo
 
-<table>
-  <tr>
-    <td align="center" width="50%"><strong>Before — focus stays on the old app</strong></td>
-    <td align="center" width="50%"><strong>After — focus follows the click</strong></td>
-  </tr>
-  <tr>
-    <td>
-      <video src="./%E5%BC%80%E5%90%AF%E5%89%8D.mp4" controls preload="metadata" width="100%"></video>
-      <p align="center"><a href="./%E5%BC%80%E5%90%AF%E5%89%8D.mp4">Open before video</a></p>
-    </td>
-    <td>
-      <video src="./%E5%BC%80%E5%90%AF%E5%90%8E.mp4" controls preload="metadata" width="100%"></video>
-      <p align="center"><a href="./%E5%BC%80%E5%90%AF%E5%90%8E.mp4">Open after video</a></p>
-    </td>
-  </tr>
-</table>
+**Before — focus stays on the old app**
+
+https://github.com/user-attachments/assets/7d204367-d2a1-47b9-989d-c1f29b16fc22
+
+**After — focus follows the click**
+
+https://github.com/user-attachments/assets/f0de3a6b-1230-42c9-a297-02f72a61b3ed
 
 ## Why I Built This
 

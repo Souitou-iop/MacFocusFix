@@ -1,5 +1,20 @@
 # macOS 27 Remote Focus Fix
 
+## README Demo Video Embed Plan
+
+- [x] Make the English README demo section render the before/after videos with clear GitHub-friendly relative paths.
+  - Verify: `README.md` references both root-level mp4 files and keeps fallback links.
+- [x] Make the Chinese README demo section mirror the same before/after video embed structure from `docs/`.
+  - Verify: `docs/README.zh-CN.md` references both root-level mp4 files through correct parent paths.
+- [x] Review the rendered Markdown source paths without changing unrelated README content.
+  - Verify: grep confirms the four video links are present and `git diff` only touches the intended sections plus this plan.
+
+## README Demo Video Embed Review
+
+- Updated the English demo table to embed the before/after mp4 files with explicit root-relative README paths and direct fallback links.
+- Updated the Simplified Chinese demo table with matching embeds using parent-directory paths from `docs/`.
+- Verified the mp4 files exist at the referenced paths and confirmed the diff only touches the README demo sections plus this task record.
+
 ## Plan
 
 - [x] Create a minimal SwiftPM macOS helper.

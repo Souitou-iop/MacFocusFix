@@ -26,8 +26,14 @@
     <td align="center" width="50%"><strong>开启后 — 焦点跟随点击</strong></td>
   </tr>
   <tr>
-    <td><video src="../%E5%BC%80%E5%90%AF%E5%89%8D.mp4" controls width="100%"></video></td>
-    <td><video src="../%E5%BC%80%E5%90%AF%E5%90%8E.mp4" controls width="100%"></video></td>
+    <td>
+      <video src="../%E5%BC%80%E5%90%AF%E5%89%8D.mp4" controls preload="metadata" width="100%"></video>
+      <p align="center"><a href="../%E5%BC%80%E5%90%AF%E5%89%8D.mp4">打开开启前视频</a></p>
+    </td>
+    <td>
+      <video src="../%E5%BC%80%E5%90%AF%E5%90%8E.mp4" controls preload="metadata" width="100%"></video>
+      <p align="center"><a href="../%E5%BC%80%E5%90%AF%E5%90%8E.mp4">打开开启后视频</a></p>
+    </td>
   </tr>
 </table>
 

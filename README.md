@@ -26,8 +26,14 @@
     <td align="center" width="50%"><strong>After — focus follows the click</strong></td>
   </tr>
   <tr>
-    <td><video src="%E5%BC%80%E5%90%AF%E5%89%8D.mp4" controls width="100%"></video></td>
-    <td><video src="%E5%BC%80%E5%90%AF%E5%90%8E.mp4" controls width="100%"></video></td>
+    <td>
+      <video src="./%E5%BC%80%E5%90%AF%E5%89%8D.mp4" controls preload="metadata" width="100%"></video>
+      <p align="center"><a href="./%E5%BC%80%E5%90%AF%E5%89%8D.mp4">Open before video</a></p>
+    </td>
+    <td>
+      <video src="./%E5%BC%80%E5%90%AF%E5%90%8E.mp4" controls preload="metadata" width="100%"></video>
+      <p align="center"><a href="./%E5%BC%80%E5%90%AF%E5%90%8E.mp4">Open after video</a></p>
+    </td>
   </tr>
 </table>
 
